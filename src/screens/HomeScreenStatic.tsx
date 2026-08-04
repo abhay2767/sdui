@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeaderComponent } from '../sdui/components/HeaderComponent';
 import { ChipGroupComponent } from '../sdui/components/ChipGroupComponent';
 import { BannerComponent } from '../sdui/components/BannerComponent';
@@ -42,7 +43,7 @@ export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Performance Bar */}
       <View style={styles.perfBar}>
         <View style={styles.perfItem}>
@@ -108,7 +109,8 @@ export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#0F172A',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
   perfBar: {
     backgroundColor: '#0F172A',
@@ -116,7 +118,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
   },
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
   benchmarkBtn: {
     backgroundColor: '#6366F1',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 8,
   },
   benchmarkBtnText: {
@@ -158,6 +160,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   scrollContainer: {
+    backgroundColor: '#F8FAFC',
     paddingBottom: 24,
   },
 });

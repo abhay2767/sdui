@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface CarDetailsScreenProps {
   route: any;
@@ -10,7 +11,7 @@ export const CarDetailsScreen: React.FC<CarDetailsScreenProps> = ({ route, navig
   const { title = 'Hyundai Creta SX', price = '₹11.45 Lakh', year = 2022, mileage = '24,500 km' } = route.params || {};
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Back</Text>
@@ -70,6 +71,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F172A',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
   topBar: {
     flexDirection: 'row',
