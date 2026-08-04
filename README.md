@@ -1,97 +1,146 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 🚗 CARS24 Server Driven UI (SDUI) Engine
 
-# Getting Started
+A production-grade, highly performant, and extensible **Server Driven UI (SDUI) Framework** built for React Native (TypeScript).
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+This repository implements a JSON-driven UI engine where entire screens, layout structures, user actions, component themes, and interactive states are dynamically controlled from the backend without requiring app updates.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🏗️ System Architecture
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```mermaid
+flowchart TD
+    A[Backend JSON Payload] --> B[SDUI Schema Parser & Version Checker]
+    B --> C[SDUI Context & State Manager]
+    C --> D[Recursive Renderer Engine]
+    D --> E{Component Registry}
+    E -->|HEADER| F[Header Component]
+    E -->|BANNER| G[Banner Component]
+    E -->|CAR_CARD| H[Car Card Component]
+    E -->|CAROUSEL| I[Carousel Component]
+    E -->|GRID| J[Grid Component]
+    E -->|CHIP_GROUP| K[Chip Selection Group]
+    E -->|UNKNOWN| L[Fallback Component + Telemetry Logger]
+    
+    D --> M[Action Dispatcher Engine]
+    M -->|NAVIGATE| N[React Navigation]
+    M -->|OPEN_BOTTOM_SHEET| O[Interactive Bottom Sheet Modal]
+    M -->|UPDATE_STATE| P[Dynamic Local State]
+    M -->|API_CALL| Q[Mock API Executor]
 ```
 
-## Step 2: Build and run your app
+---
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## ⚡ Key Features
 
-### Android
+1. **Zero-Hardcoded UI Logic**: Layouts, components, styles, hierarchy, and actions are 100% specified via JSON.
+2. **Component Registry Mapping**: Map JSON type string identifiers (`HEADER`, `CAR_CARD`, `CAROUSEL`, etc.) directly to React Native components.
+3. **Graceful Fallback & Crash Prevention**: Unsupported or novel component types render an inline warning box with log telemetry, ensuring zero app crashes.
+4. **Declarative Action Dispatcher**: Handles user actions (`NAVIGATE`, `OPEN_BOTTOM_SHEET`, `UPDATE_STATE`, `API_CALL`) defined in JSON.
+5. **Schema Versioning**: Client compares `schemaVersion` against supported version and handles backward compatibility.
+6. **Real-time Performance Benchmarking**: Side-by-side comparison screen comparing static hardcoded UI vs SDUI engine rendering.
 
-```sh
-# Using npm
-npm run android
+---
 
-# OR using Yarn
-yarn android
+## 📁 Project Structure
+
+```
+/src
+  /sdui
+    /components     # Reusable UI components (Header, Banner, CarCard, Carousel, Grid, etc.)
+    /registry       # Type string to React Component registry mapping
+    /renderer       # Recursive node renderer engine
+    /actions        # Action dispatcher & event handlers
+    /types          # TypeScript interfaces for JSON schema
+    /utils          # Performance timer, telemetry logger, versioning utilities
+    /context        # SDUI global state & action context provider
+  /screens
+    HomeScreenSDUI.tsx    # JSON-driven SDUI Home Screen
+    HomeScreenStatic.tsx  # Hardcoded UI for performance benchmark baseline
+    CarDetailsScreen.tsx  # Target detail screen for NAVIGATE action
+    PerfScreen.tsx        # Performance measurement & telemetry log viewer
+  /data
+    homeSDUI.json         # Comprehensive SDUI layout & payload for Cars24 Home
+    staticHomeData.ts     # Baseline data fixture for static comparison
 ```
 
-### iOS
+---
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## 📄 JSON Schema Overview
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```json
+{
+  "version": "1.0",
+  "pageId": "CARS24_HOME_SCREEN",
+  "initialState": {
+    "selectedCategory": "all"
+  },
+  "page": [
+    {
+      "id": "header_1",
+      "type": "HEADER",
+      "props": {
+        "title": "CARS24",
+        "location": "Gurgaon, NCR ▾"
+      }
+    },
+    {
+      "id": "carousel_1",
+      "type": "CAROUSEL",
+      "props": { "title": "⚡ Hot Picked Cars Today" },
+      "children": [
+        {
+          "id": "car_1",
+          "type": "CAR_CARD",
+          "props": { "title": "Hyundai Creta SX", "price": "₹11.45 Lakh" },
+          "action": {
+            "type": "NAVIGATE",
+            "payload": { "screen": "CarDetails", "params": { "carId": "car_1" } }
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
-Then, and every time you update your native dependencies, run:
+---
 
-```sh
-bundle exec pod install
+## 🚀 Setup & Execution Instructions
+
+### 1. Installation
+```bash
+git clone https://github.com/abhay2767/sdui.git
+cd sdui
+npm install
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+### 2. Running on Android
+```bash
+npx react-native run-android
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### 3. Running on iOS
+```bash
+cd ios && pod install && cd ..
+npx react-native run-ios
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### 4. Running Performance Benchmark
+Inside the app, tap the **"📊 Compare"** button on the top performance bar to open the live benchmark comparison and telemetry log console.
 
-## Step 3: Modify your app
+---
 
-Now that you have successfully run the app, let's make changes!
+## 🎯 Design Decisions & Trade-Offs
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+- **Recursive Tree Traversal**: We chose a clean recursive renderer (`SDUIRenderer`) over flat rendering to support deep nesting (e.g. CarCards inside Carousels inside Containers).
+- **React.memo Optimization**: Every component in the registry is wrapped in `React.memo` to prevent re-renders when parent state updates.
+- **Action Dispatcher via Context**: Using React Context for action dispatching allows deeply nested nodes to trigger navigation or open modal sheets without prop drilling.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+---
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## 📦 Documentation
 
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- [PERF.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/PERF.md) – Performance benchmark details & Static vs SDUI overhead analysis.
+- [COVERAGE.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/COVERAGE.md) – Component coverage, patterns, and extension points.
+- [AI_WORKFLOW.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/AI_WORKFLOW.md) – Record of prompts, AI outputs, failure cases, and verification strategies.
