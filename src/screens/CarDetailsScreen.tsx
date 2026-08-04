@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CarDetailsScreenProps {
   route: any;
@@ -8,10 +8,14 @@ interface CarDetailsScreenProps {
 }
 
 export const CarDetailsScreen: React.FC<CarDetailsScreenProps> = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { title = 'Hyundai Creta SX', price = '₹11.45 Lakh', year = 2022, mileage = '24,500 km' } = route.params || {};
+
+  const bottomPadding = Math.max(insets.bottom, 12);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Fixed Top Bar */}
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Back</Text>
@@ -20,7 +24,12 @@ export const CarDetailsScreen: React.FC<CarDetailsScreenProps> = ({ route, navig
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      {/* Scrollable Car Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, { paddingBottom: 85 + bottomPadding }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80' }}
@@ -58,11 +67,26 @@ export const CarDetailsScreen: React.FC<CarDetailsScreenProps> = ({ route, navig
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.bookBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.bookBtnText}>Book Free Test Drive</Text>
-          </TouchableOpacity>
+          <View style={styles.extraDetails}>
+            <Text style={styles.extraTitle}>Vehicle Features & Highlights</Text>
+            <Text style={styles.extraItem}>• 140-Point Quality Check Passed</Text>
+            <Text style={styles.extraItem}>• 12 Months Warranty Included</Text>
+            <Text style={styles.extraItem}>• 7-Day Easy Return Guarantee</Text>
+            <Text style={styles.extraItem}>• Zero Downpayment Financing Options</Text>
+          </View>
         </View>
       </ScrollView>
+
+      {/* Pinned Bottom Button Bar (100% Fixed at Screen Bottom) */}
+      <View style={[styles.bottomBar, { paddingBottom: bottomPadding }]}>
+        <TouchableOpacity
+          style={styles.bookBtn}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.bookBtnText}>Book Free Test Drive</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -71,6 +95,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F172A',
+    position: 'relative',
   },
   topBar: {
     flexDirection: 'row',
@@ -80,6 +105,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
+    backgroundColor: '#0F172A',
+    zIndex: 10,
   },
   backBtn: {
     padding: 4,
@@ -94,8 +121,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
-    paddingBottom: 32,
+    paddingBottom: 90,
   },
   imageContainer: {
     height: 220,
@@ -125,7 +155,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -16,
-    flex: 1,
   },
   title: {
     fontSize: 22,
@@ -142,7 +171,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   statBox: {
     backgroundColor: '#0F172A',
@@ -168,7 +197,7 @@ const styles = StyleSheet.create({
     borderColor: '#38BDF8',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   infoTitle: {
     fontSize: 14,
@@ -181,11 +210,47 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
     lineHeight: 18,
   },
+  extraDetails: {
+    backgroundColor: '#0F172A',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  extraTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    marginBottom: 8,
+  },
+  extraItem: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1E293B',
+    borderTopWidth: 1,
+    borderTopColor: '#334155',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    elevation: 10,
+    zIndex: 100,
+  },
   bookBtn: {
     backgroundColor: '#FF6B00',
-    paddingVertical: 16,
-    borderRadius: 14,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   bookBtnText: {
     color: '#FFFFFF',

@@ -6,6 +6,19 @@ This repository implements a JSON-driven UI engine where entire screens, layout 
 
 ---
 
+## 🎯 Screen Choice Rationale
+
+**Chosen Screen**: **CARS24 Home / Landing Screen**
+
+**Why this screen?**
+The CARS24 Home Screen is the central, highest-complexity screen in the entire app. It features:
+- **5+ visually distinct section types** (Header with location & search, interactive category chips, promotional banners, horizontal carousel, 2-column car grid, spacer/dividers).
+- **Multiple layout paradigms**: Horizontal scrolling carousels + vertical car grids.
+- **Rich interactions**: Dynamic chip selection, tap-to-navigate car detail intent, location bottom sheet popups, and simulated API call triggers.
+- **Deep nesting & generalizability**: Tests container components, conditions, dynamic props, and action routing in a realistic production scenario.
+
+---
+
 ## 🏗️ System Architecture
 
 ```mermaid
@@ -31,14 +44,26 @@ flowchart TD
 
 ---
 
-## ⚡ Key Features
+## ⚙️ Core Requirements Checklist
 
-1. **Zero-Hardcoded UI Logic**: Layouts, components, styles, hierarchy, and actions are 100% specified via JSON.
-2. **Component Registry Mapping**: Map JSON type string identifiers (`HEADER`, `CAR_CARD`, `CAROUSEL`, etc.) directly to React Native components.
-3. **Graceful Fallback & Crash Prevention**: Unsupported or novel component types render an inline warning box with log telemetry, ensuring zero app crashes.
-4. **Declarative Action Dispatcher**: Handles user actions (`NAVIGATE`, `OPEN_BOTTOM_SHEET`, `UPDATE_STATE`, `API_CALL`) defined in JSON.
-5. **Schema Versioning**: Client compares `schemaVersion` against supported version and handles backward compatibility.
-6. **Real-time Performance Benchmarking**: Side-by-side comparison screen comparing static hardcoded UI vs SDUI engine rendering.
+| Requirement | Implementation Details | Status |
+| :--- | :--- | :--- |
+| **JSON-Driven UI** | UI rendered 100% from JSON schema without hardcoded UI logic | ✅ Passed |
+| **Component Registry** | Type string mapping (`HEADER`, `CAR_CARD`, `CAROUSEL`, etc.) to native views | ✅ Passed |
+| **Action System** | Expressed in JSON (`NAVIGATE`, `OPEN_BOTTOM_SHEET`, `UPDATE_STATE`, `API_CALL`) | ✅ Passed |
+| **Unknown Component Fallback** | Graceful degradation via `FallbackComponent` + `SDUILogger` telemetry | ✅ Passed |
+| **Versioning Strategy** | `schemaVersion` comparison with backward compatibility logic | ✅ Passed |
+| **Static vs SDUI Benchmark** | High-resolution performance timing comparing hardcoded vs SDUI engine | ✅ Passed |
+| **Documentation Suite** | `README.md`, `PERF.md`, `COVERAGE.md`, `AI_WORKFLOW.md` | ✅ Passed |
+
+---
+
+## 📱 Versioning Strategy
+
+The client includes a forward/backward versioning manager (`src/sdui/utils/versioning.ts`):
+1. **`schema.version` Check**: The root JSON specifies `version` (e.g. `"1.0"`).
+2. **Backward Compatibility**: If the server sends a minor version update (e.g. `"1.1"`), the client renders known nodes and ignores unrecognized fields.
+3. **Major Version Mismatch**: If the server sends a major version higher than client capability (e.g. `"2.0"`), unknown node types trigger `FallbackComponent` with telemetry logs to alert engineering teams.
 
 ---
 
@@ -127,20 +152,12 @@ npx react-native run-ios
 ```
 
 ### 4. Running Performance Benchmark
-Inside the app, tap the **"📊 Compare"** button on the top performance bar to open the live benchmark comparison and telemetry log console.
+Inside the app, tap the **"📊 Compare"** button on the top performance bar to open the live benchmark comparison screen and telemetry log console.
 
 ---
 
-## 🎯 Design Decisions & Trade-Offs
+## 📦 Benchmark & Coverage Documentation
 
-- **Recursive Tree Traversal**: We chose a clean recursive renderer (`SDUIRenderer`) over flat rendering to support deep nesting (e.g. CarCards inside Carousels inside Containers).
-- **React.memo Optimization**: Every component in the registry is wrapped in `React.memo` to prevent re-renders when parent state updates.
-- **Action Dispatcher via Context**: Using React Context for action dispatching allows deeply nested nodes to trigger navigation or open modal sheets without prop drilling.
-
----
-
-## 📦 Documentation
-
-- [PERF.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/PERF.md) – Performance benchmark details & Static vs SDUI overhead analysis.
-- [COVERAGE.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/COVERAGE.md) – Component coverage, patterns, and extension points.
-- [AI_WORKFLOW.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/AI_WORKFLOW.md) – Record of prompts, AI outputs, failure cases, and verification strategies.
+- [PERF.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/PERF.md) – Performance benchmark details, TTR/TTI breakdown, and Static vs SDUI overhead analysis.
+- [COVERAGE.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/COVERAGE.md) — Component coverage, generalizability claims, and extension guidelines.
+- [AI_WORKFLOW.md](file:///d:/Abhay_Work/assignment_cars24/sdui_app/AI_WORKFLOW.md) — AI prompt history, rejected outputs, failure case, and verification habits.

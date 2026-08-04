@@ -39,7 +39,55 @@ export const SDUIRenderer: React.FC<RendererProps> = React.memo(({ node, nodes, 
       resolvedProps.onPress = () => handleAction(item.action!, navigation);
     }
 
-    if (item.type.toUpperCase() === 'CHIP_GROUP') {
+    const typeUpper = item.type.toUpperCase();
+
+    if (typeUpper === 'HEADER') {
+      resolvedProps.onLocationPress = () => {
+        if (resolvedProps.locationAction) {
+          handleAction(resolvedProps.locationAction, navigation);
+        } else if (item.action) {
+          handleAction(item.action, navigation);
+        } else {
+          handleAction({
+            type: 'OPEN_BOTTOM_SHEET',
+            payload: {
+              title: '📍 Select City / Location',
+              content: 'Choose your preferred location: Gurgaon, Delhi NCR, Mumbai, Bengaluru, Hyderabad, Pune, Chennai',
+            },
+          }, navigation);
+        }
+      };
+
+      resolvedProps.onSearchPress = () => {
+        if (resolvedProps.searchAction) {
+          handleAction(resolvedProps.searchAction, navigation);
+        } else {
+          handleAction({
+            type: 'OPEN_BOTTOM_SHEET',
+            payload: {
+              title: '🔍 Search Used Cars',
+              content: 'Type brand or model (e.g. Swift, Creta, City, Nexon) to filter available inventory in real time.',
+            },
+          }, navigation);
+        }
+      };
+
+      resolvedProps.onFilterPress = () => {
+        if (resolvedProps.filterAction) {
+          handleAction(resolvedProps.filterAction, navigation);
+        } else {
+          handleAction({
+            type: 'OPEN_BOTTOM_SHEET',
+            payload: {
+              title: '⚙️ Car Filter Settings',
+              content: 'Filter options: Price Range, Fuel Type (Petrol/Diesel/EV), Transmission (Manual/Auto), Year of Manufacture',
+            },
+          }, navigation);
+        }
+      };
+    }
+
+    if (typeUpper === 'CHIP_GROUP') {
       resolvedProps.onSelect = (chip: any) => {
         if (resolvedProps.stateKey) {
           handleAction(

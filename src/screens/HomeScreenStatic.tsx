@@ -8,6 +8,8 @@ import { CarouselComponent } from '../sdui/components/CarouselComponent';
 import { CarCardComponent } from '../sdui/components/CarCardComponent';
 import { GridComponent } from '../sdui/components/GridComponent';
 import { SpacerComponent } from '../sdui/components/SpacerComponent';
+import { BottomSheetComponent } from '../sdui/components/BottomSheetComponent';
+import { useSDUI } from '../sdui/context/SDUIContext';
 import {
   STATIC_HEADER_DATA,
   STATIC_CHIPS_DATA,
@@ -24,6 +26,7 @@ interface HomeScreenStaticProps {
 export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }) => {
   const [selectedChip, setSelectedChip] = useState('all');
   const [renderTimeMs, setRenderTimeMs] = useState(0);
+  const { openBottomSheet } = useSDUI();
 
   useEffect(() => {
     const start = getCurrentTimeMs();
@@ -66,7 +69,18 @@ export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
         {/* Section 1: Header */}
-        <HeaderComponent {...STATIC_HEADER_DATA} />
+        <HeaderComponent
+          {...STATIC_HEADER_DATA}
+          onLocationPress={() =>
+            openBottomSheet('📍 Select City / Location', 'Choose your location: Gurgaon, Delhi NCR, Mumbai, Bengaluru, Hyderabad')
+          }
+          onSearchPress={() =>
+            openBottomSheet('🔍 Search Used Cars', 'Search by brand or model (e.g. Swift, Creta, City, Nexon).')
+          }
+          onFilterPress={() =>
+            openBottomSheet('⚙️ Car Filter Settings', 'Filter options: Price, Fuel Type, Transmission, Year.')
+          }
+        />
 
         {/* Section 2: Chip Group */}
         <ChipGroupComponent
@@ -102,6 +116,8 @@ export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }
 
         <SpacerComponent height={40} />
       </ScrollView>
+
+      <BottomSheetComponent />
     </SafeAreaView>
   );
 };

@@ -9,6 +9,7 @@ interface HeaderComponentProps {
   showSearch?: boolean;
   onSearchPress?: () => void;
   onLocationPress?: () => void;
+  onFilterPress?: () => void;
 }
 
 export const HeaderComponent: React.FC<HeaderComponentProps> = ({
@@ -19,6 +20,7 @@ export const HeaderComponent: React.FC<HeaderComponentProps> = ({
   showSearch = true,
   onSearchPress,
   onLocationPress,
+  onFilterPress,
 }) => {
   return (
     <View style={styles.container}>
@@ -44,9 +46,16 @@ export const HeaderComponent: React.FC<HeaderComponentProps> = ({
         >
           <Text style={styles.searchIcon}>🔍</Text>
           <Text style={styles.placeholderText}>{searchPlaceholder}</Text>
-          <View style={styles.filterBtn}>
+          <TouchableOpacity 
+            style={styles.filterBtn} 
+            onPress={(e) => {
+              e.stopPropagation();
+              if (onFilterPress) onFilterPress();
+            }} 
+            activeOpacity={0.7}
+          >
             <Text style={styles.filterBtnText}>⚙️</Text>
-          </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       )}
     </View>
@@ -120,7 +129,8 @@ const styles = StyleSheet.create({
   filterBtn: {
     backgroundColor: '#334155',
     borderRadius: 6,
-    padding: 3,
+    padding: 5,
+    paddingHorizontal: 7,
   },
   filterBtnText: {
     fontSize: 11,
