@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface HeaderComponentProps {
   title?: string;
@@ -56,8 +56,8 @@ export const HeaderComponent: React.FC<HeaderComponentProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#0F172A',
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -66,16 +66,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
-    color: '#FF6B00', // Cars24 Orange
-    letterSpacing: 1,
+    color: '#FF6B00',
+    letterSpacing: 0.5,
   },
   brandSubtitle: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#94A3B8',
     fontWeight: '500',
   },
@@ -83,18 +83,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1E293B',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#334155',
   },
   locationPin: {
-    fontSize: 12,
+    fontSize: 11,
     marginRight: 4,
   },
   locationText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#F8FAFC',
     fontWeight: '600',
   },
@@ -102,27 +102,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1E293B',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#334155',
   },
   searchIcon: {
-    fontSize: 14,
+    fontSize: 13,
     marginRight: 8,
   },
   placeholderText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: '#94A3B8',
   },
   filterBtn: {
     backgroundColor: '#334155',
     borderRadius: 6,
-    padding: 4,
+    padding: 3,
   },
   filterBtnText: {
-    fontSize: 12,
+    fontSize: 11,
   },
 });

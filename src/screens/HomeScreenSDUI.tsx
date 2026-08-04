@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SDUIRenderer } from '../sdui/renderer/Renderer';
 import { SDUIPageSchema } from '../sdui/types/schema';
@@ -117,15 +117,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F172A',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
   },
   perfBar: {
     backgroundColor: '#0F172A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
   },
@@ -134,36 +133,36 @@ const styles = StyleSheet.create({
   },
   perfLabel: {
     color: '#94A3B8',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
   perfValue: {
     color: '#38BDF8',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
   },
   perfValueHighlight: {
     color: '#10B981',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     fontFamily: 'monospace',
   },
   perfDivider: {
     width: 1,
-    height: 20,
+    height: 16,
     backgroundColor: '#334155',
   },
   benchmarkBtn: {
     backgroundColor: '#FF6B00',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   benchmarkBtnText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
   },
   scrollContainer: {
