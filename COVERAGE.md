@@ -1,51 +1,55 @@
-# 📊 COVERAGE.md — SDUI Component & Generalization Coverage Matrix
+# COVERAGE.md — What renders from JSON alone
 
-## 1. Honest Coverage Claim
+## Component registry (23 types)
 
-> **"Given a new Cars24 screen, 85–90% renders with JSON-only changes. Only specialized native modules (e.g. 3D car inspectors, native payment SDKs) require new client code."**
+**Layout primitives:** `ROW` · `COLUMN` · `CARD` · `CONTAINER` · `DIVIDER` · `SPACER`
+**Content primitives:** `TEXT` (7 typography variants) · `IMAGE` · `BUTTON` · `BADGE` · `KEY_VALUE_ROW` · `STAT_TILE` · `RATING` · `PROGRESS_BAR` · `LIST_ITEM` · `CHECK_ROW`
+**Interactive primitives:** `CHIP_GROUP` · `SEGMENTED_CONTROL`
+**Cars24 composites:** `HEADER` · `BANNER` · `CAR_CARD` · `CAROUSEL` · `GRID`
 
----
+Every composite is expressible in primitives; composites exist as hand-tuned fast paths for high-traffic sections, not as requirements.
 
-## 2. Expressible UI Patterns Matrix
+## Patterns the schema expresses (all JSON-only)
 
-| UI Pattern | Supported in Schema? | How it is Expressed in JSON | Client Code Required? |
-| :--- | :--- | :--- | :--- |
-| **Vertical Lists & Feeds** | ✅ Yes | `children: [...]` inside standard layout containers | ❌ No (JSON only) |
-| **Horizontal Carousels** | ✅ Yes | `"type": "CAROUSEL"`, `props: { itemWidth, title }` | ❌ No (JSON only) |
-| **Multi-Column Grids** | ✅ Yes | `"type": "GRID"`, `props: { columns: 2, gap: 12 }` | ❌ No (JSON only) |
-| **Interactive Selection Chips**| ✅ Yes | `"type": "CHIP_GROUP"`, `props: { stateKey }` | ❌ No (JSON only) |
-| **Conditional Rendering** | ✅ Yes | `"condition": { "stateKey": "selectedCategory", "equals": "suv" }` | ❌ No (JSON only) |
-| **Tap Actions & Navigation** | ✅ Yes | `"action": { "type": "NAVIGATE", "payload": { "screen": "CarDetails" } }` | ❌ No (JSON only) |
-| **Bottom Sheet Overlays** | ✅ Yes | `"action": { "type": "OPEN_BOTTOM_SHEET", "payload": { "title": "..." } }` | ❌ No (JSON only) |
-| **Styling Overrides** | ✅ Yes | `"style": { "backgroundColor": "#0F172A", "borderRadius": 16 }` | ❌ No (JSON only) |
+| Pattern | Mechanism |
+|---|---|
+| Vertical stacks / sections | `COLUMN`, `children` |
+| Horizontal rails | `CAROUSEL` (snap scrolling) or `ROW` |
+| N-column grids | `GRID` with `columns`/`gap` |
+| Data-driven repetition | `forEach` (inline data) / `forEachStateKey` (state array) + `template`, `{{item.*}}` bindings |
+| Conditional visibility | `visibleWhen` with `equals/notEquals/oneOf/contains/exists/gt/lt` + `all/any/not` |
+| Selection driving content | bound prop (`"selected": "{{state.k}}"`) + `SET_STATE` slot → other nodes' `visibleWhen`/bindings react |
+| Taps → navigation | `NAVIGATE` with params (params can carry whole objects into the next page's binding scope) |
+| Bottom sheets with arbitrary content | `OPEN_BOTTOM_SHEET` whose `body` is an SDUI node tree |
+| Action sequencing | `then` chains (e.g. select city → close sheet) |
+| Text/value interpolation | `{{state.*}} / {{item.*}} / {{event.*}}` |
+| Membership / selection display | `{{state.wishlist contains car_1}}` → boolean prop (wishlist hearts, multi-select chips) |
+| Styling overrides | per-node `style` (RN keys) + `$token` theme references |
+| Progressive rollout / mixed fleets | per-node `minVersion` + server-defined `fallback` |
 
----
+## Honest coverage claim
 
-## 3. Supported Component Registry
+> **Given a new Cars24 screen, I estimate ~80–85% of its sections render with JSON-only changes.** Content sections (headers, lists, spec tables, checklists, banners, CTAs, pickers, tab-filtered content) are fully covered by the vocabulary above. The remainder splits into "new leaf component, fast" and "engine work, slower" — itemized below, because a one-number claim hides where the time actually goes.
 
-| Component Type | SDUI Type Identifier | Dynamic Props | Supported Actions | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **Header Bar** | `HEADER` | `title`, `subtitle`, `location`, `searchPlaceholder` | `OPEN_BOTTOM_SHEET`, `NAVIGATE` | ✅ Fully Supported |
-| **Promo Banner** | `BANNER` | `title`, `subtitle`, `ctaText`, `badge`, `backgroundColor` | `OPEN_BOTTOM_SHEET`, `API_CALL` | ✅ Fully Supported |
-| **Car Card** | `CAR_CARD` | `title`, `subtitle`, `price`, `emi`, `year`, `mileage`, `fuelType` | `NAVIGATE`, `TOGGLE_SELECTION` | ✅ Fully Supported |
-| **Horizontal Rail**| `CAROUSEL` | `title`, `subtitle`, `itemWidth`, `children` | Container | ✅ Fully Supported |
-| **Card Grid** | `GRID` | `title`, `subtitle`, `columns`, `gap`, `children` | Container | ✅ Fully Supported |
-| **Category Chips** | `CHIP_GROUP` | `items`, `stateKey`, `selectedId` | `UPDATE_STATE` | ✅ Fully Supported |
-| **Container Box** | `CONTAINER` | `style`, `padding`, `backgroundColor`, `children` | Tap actions | ✅ Fully Supported |
-| **Spacer** | `SPACER` | `height`, `width`, `backgroundColor` | N/A | ✅ Fully Supported |
-| **Fallback Widget**| *Unknown Type* | `type` | Graceful logging + Telemetry | ✅ Safe Degradation |
+Basis for the number: the Car Details page was authored *after* the engine was frozen and needed zero new components — every section (hero, stats, EMI selector, inspection checklist, progress score, CTA) came from the existing registry. That's one data point, not proof; the surprise screen is the real test.
 
----
+### 🟢 JSON-only (no client changes)
 
-## 4. Extension Strategy for Unseen Cars24 Screens (Surprise Screen Test)
+Headers, text of any hierarchy, images, badges, buttons, key-value/spec tables, checklists, ratings, progress bars, stat rows, list menus, chip filters with content that reacts, segmented selectors, sheets, banners, carousels, grids, section reordering, styling changes, A/B variants via `visibleWhen`.
 
-If presented with a brand new Cars24 screen (e.g., **Car Evaluation / Inspection Report Screen** or **Sell Car Booking Flow**):
+### 🟡 New leaf component (fast — register + build one file)
 
-### 🟢 Renders 100% via JSON edits (Zero Client Code):
-- Section titles, headers, status badges, price breakdown rows, inspection checkmark lists, image carousels, CTA banners, and navigation buttons.
+Examples: video player block, map snippet, OTP input, image-comparison slider. Cost shape: one component file + one registry line; **no renderer, schema, or action changes** (action slots and bindings compose automatically). The `RATING` primitive was added this way to validate the path: component + registry line, usable from JSON immediately.
 
-### 🟡 Requires New Component Registration (Fast AI Extension):
-- **Custom Rating Star Bar**: Build `<RatingComponent />` (~10 mins using AI), register in `COMPONENT_REGISTRY["RATING_BAR"] = RatingComponent`, and consume immediately in JSON payloads.
+### 🔴 Engine or native work (slower, and honestly outside JSON)
 
-### 🔴 Requires Native Code (Out of Scope for JSON):
-- Native AR car inspection scanner modules, 3D WebGL viewer integration, or third-party payment SDK bridges (e.g. Razorpay/Stripe native views).
+- **Forms with validation** — needs a `SUBMIT_FORM` action + field-state conventions (engine work, ~half a day).
+- **Virtualized infinite feeds** — needs a `LIST` type backed by FlatList + a pagination action (engine work; the schema already expresses the repetition, the renderer needs the virtualization path).
+- **Native SDK surfaces** — payments, AR/3D viewers, camera flows. These are native modules behind a registered component at best; their internals are not servable as JSON and shouldn't be.
+
+## The surprise-screen playbook (how I'd work live)
+
+1. Sketch the screen as sections; map each to registry types (most map to primitives immediately).
+2. Author JSON top-down, `initialState` first, binding any interactive values.
+3. Anything unknown: drop the intended `type` into the payload anyway — it degrades visibly via `UnsupportedNode`, the page stays alive, and the placeholder becomes the to-do list.
+4. For each placeholder: build the leaf component, add one registry line, reload — the JSON already written starts rendering.

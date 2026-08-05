@@ -1,3 +1,24 @@
+/**
+ * Fixture for the hardcoded baseline screen. Mirrors homeSDUI.json exactly —
+ * same sections, same cars, same images — so the perf comparison isolates the
+ * engine overhead, not content differences.
+ */
+
+export interface StaticCar {
+  id: string;
+  category: 'suv' | 'sedan' | 'hatchback' | 'luxury';
+  title: string;
+  subtitle: string;
+  price: string;
+  emi: string;
+  year: number;
+  mileage: string;
+  fuelType: string;
+  transmission: string;
+  tag: string;
+  imageUrl: string;
+}
+
 export const STATIC_HEADER_DATA = {
   title: 'CARS24',
   subtitle: 'Drive Quality Used Cars',
@@ -22,9 +43,17 @@ export const STATIC_BANNER_DATA = {
   textColor: '#FFFFFF',
 };
 
-export const STATIC_FEATURED_CARS = [
+export const STATIC_TENURES = [
+  { id: '24', label: '24 mo', emi: '26,300' },
+  { id: '36', label: '36 mo', emi: '18,450' },
+  { id: '48', label: '48 mo', emi: '14,600' },
+  { id: '60', label: '60 mo', emi: '12,150' },
+];
+
+export const STATIC_FEATURED_CARS: StaticCar[] = [
   {
     id: 'car_1',
+    category: 'suv',
     title: 'Hyundai Creta SX 1.5',
     subtitle: '1.5 Petrol • Manual',
     price: '₹11.45 Lakh',
@@ -33,11 +62,12 @@ export const STATIC_FEATURED_CARS = [
     mileage: '24,500 km',
     fuelType: 'Petrol',
     transmission: 'Manual',
-    tag: '140-Point Inspection Passed',
+    tag: '140-Point Inspected',
     imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=500&q=80',
   },
   {
     id: 'car_2',
+    category: 'hatchback',
     title: 'Maruti Swift ZXI+',
     subtitle: '1.2 Dualjet Petrol',
     price: '₹6.80 Lakh',
@@ -51,6 +81,7 @@ export const STATIC_FEATURED_CARS = [
   },
   {
     id: 'car_3',
+    category: 'suv',
     title: 'Tata Nexon XZ+ (S)',
     subtitle: '1.2 Revotron Turbo',
     price: '₹9.25 Lakh',
@@ -59,14 +90,29 @@ export const STATIC_FEATURED_CARS = [
     mileage: '12,100 km',
     fuelType: 'Petrol',
     transmission: 'Automatic',
-    tag: '5-Star Safety Rating',
+    tag: '5-Star Safety',
     imageUrl: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=500&q=80',
+  },
+  {
+    id: 'car_6',
+    category: 'luxury',
+    title: 'BMW 3 Series 330i',
+    subtitle: '2.0 Twin-Turbo Petrol',
+    price: '₹28.90 Lakh',
+    emi: '₹46,500',
+    year: 2021,
+    mileage: '31,000 km',
+    fuelType: 'Petrol',
+    transmission: 'Automatic',
+    tag: 'Luxury Certified',
+    imageUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=500&q=80',
   },
 ];
 
-export const STATIC_POPULAR_CARS = [
+export const STATIC_POPULAR_CARS: StaticCar[] = [
   {
     id: 'car_4',
+    category: 'sedan',
     title: 'Honda City ZX',
     subtitle: '1.5 i-VTEC',
     price: '₹10.50 Lakh',
@@ -80,6 +126,7 @@ export const STATIC_POPULAR_CARS = [
   },
   {
     id: 'car_5',
+    category: 'suv',
     title: 'Kia Seltos HTX',
     subtitle: '1.5 Diesel',
     price: '₹12.90 Lakh',
@@ -91,4 +138,38 @@ export const STATIC_POPULAR_CARS = [
     tag: 'CARS24 Certified',
     imageUrl: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=500&q=80',
   },
+  {
+    id: 'car_7',
+    category: 'hatchback',
+    title: 'Maruti Baleno Alpha',
+    subtitle: '1.2 Petrol',
+    price: '₹7.35 Lakh',
+    emi: '₹11,850',
+    year: 2022,
+    mileage: '15,800 km',
+    fuelType: 'Petrol',
+    transmission: 'AMT',
+    tag: 'Low Mileage',
+    imageUrl: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=500&q=80',
+  },
+  {
+    id: 'car_8',
+    category: 'sedan',
+    title: 'Hyundai Verna SX(O)',
+    subtitle: '1.5 Turbo',
+    price: '₹13.20 Lakh',
+    emi: '₹21,300',
+    year: 2023,
+    mileage: '9,600 km',
+    fuelType: 'Petrol',
+    transmission: 'DCT',
+    tag: 'Almost New',
+    imageUrl: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=500&q=80',
+  },
+];
+
+export const STATIC_VALUE_PROPS = [
+  { icon: '🔍', value: '140', label: 'Point Inspection' },
+  { icon: '↩️', value: '7 Days', label: 'Easy Returns' },
+  { icon: '🛡️', value: '1 Year', label: 'Warranty' },
 ];

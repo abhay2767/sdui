@@ -73,3 +73,8 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# SDUI
+android/app/.cxx/
+HANDOFF.md
+cars24-sdui-release.apk

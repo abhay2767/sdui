@@ -1,26 +1,136 @@
 {
-  "version": "1.0",
-  "pageId": "CARS24_HOME_SCREEN",
-  "title": "Cars24 Home SDUI",
+  "version": "1.2",
+  "pageId": "CARS24_HOME",
+  "title": "Cars24 Home",
+  "meta": {
+    "author": "sdui-mock-server",
+    "updatedAt": "2026-08-05"
+  },
   "initialState": {
     "selectedCategory": "all",
-    "wishlistedCars": []
+    "selectedCity": "Gurgaon, NCR",
+    "selectedTenure": "36",
+    "emiAmount": "18,450",
+    "wishlist": []
   },
   "page": [
     {
-      "id": "header_1",
+      "id": "header",
       "type": "HEADER",
       "props": {
         "title": "CARS24",
         "subtitle": "Drive Quality Used Cars",
-        "location": "Gurgaon, NCR ▾",
+        "location": "{{state.selectedCity}} ▾",
         "searchPlaceholder": "Search Swift, Creta, City..."
       },
-      "action": {
-        "type": "OPEN_BOTTOM_SHEET",
-        "payload": {
-          "title": "Location Selector",
-          "content": "Select your city: Gurgaon, Delhi, Noida, Bengaluru, Mumbai, Hyderabad"
+      "actions": {
+        "onLocationPress": {
+          "type": "OPEN_BOTTOM_SHEET",
+          "payload": {
+            "title": "📍 Choose your city",
+            "body": [
+              {
+                "id": "city_list",
+                "type": "COLUMN",
+                "children": [
+                  {
+                    "type": "LIST_ITEM",
+                    "props": {
+                      "icon": "🏙️",
+                      "title": "Gurgaon, NCR",
+                      "subtitle": "1,240 cars available"
+                    },
+                    "action": {
+                      "type": "SET_STATE",
+                      "payload": {
+                        "key": "selectedCity",
+                        "value": "Gurgaon, NCR"
+                      },
+                      "then": [
+                        {
+                          "type": "CLOSE_BOTTOM_SHEET"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "LIST_ITEM",
+                    "props": {
+                      "icon": "🌆",
+                      "title": "Mumbai",
+                      "subtitle": "980 cars available"
+                    },
+                    "action": {
+                      "type": "SET_STATE",
+                      "payload": {
+                        "key": "selectedCity",
+                        "value": "Mumbai"
+                      },
+                      "then": [
+                        {
+                          "type": "CLOSE_BOTTOM_SHEET"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "LIST_ITEM",
+                    "props": {
+                      "icon": "🌉",
+                      "title": "Bengaluru",
+                      "subtitle": "1,105 cars available"
+                    },
+                    "action": {
+                      "type": "SET_STATE",
+                      "payload": {
+                        "key": "selectedCity",
+                        "value": "Bengaluru"
+                      },
+                      "then": [
+                        {
+                          "type": "CLOSE_BOTTOM_SHEET"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "LIST_ITEM",
+                    "props": {
+                      "icon": "🌇",
+                      "title": "Hyderabad",
+                      "subtitle": "860 cars available"
+                    },
+                    "action": {
+                      "type": "SET_STATE",
+                      "payload": {
+                        "key": "selectedCity",
+                        "value": "Hyderabad"
+                      },
+                      "then": [
+                        {
+                          "type": "CLOSE_BOTTOM_SHEET"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "onSearchPress": {
+          "type": "OPEN_BOTTOM_SHEET",
+          "payload": {
+            "title": "🔍 Search Used Cars",
+            "content": "Type brand or model (e.g. Swift, Creta, City, Nexon) to filter inventory in real time."
+          }
+        },
+        "onFilterPress": {
+          "type": "OPEN_BOTTOM_SHEET",
+          "payload": {
+            "title": "⚙️ Filters",
+            "content": "Price range, fuel type, transmission, year — configurable filter form ships in payload v1.3."
+          }
         }
       }
     },
@@ -28,18 +138,47 @@
       "id": "chips_category",
       "type": "CHIP_GROUP",
       "props": {
-        "stateKey": "selectedCategory",
+        "selected": "{{state.selectedCategory}}",
         "items": [
-          { "id": "all", "label": "All Cars", "icon": "🚘" },
-          { "id": "suv", "label": "SUVs", "icon": "🚙" },
-          { "id": "sedan", "label": "Sedans", "icon": "🏎️" },
-          { "id": "hatchback", "label": "Hatchbacks", "icon": "🚗" },
-          { "id": "luxury", "label": "Luxury", "icon": "✨" }
+          {
+            "id": "all",
+            "label": "All Cars",
+            "icon": "🚘"
+          },
+          {
+            "id": "suv",
+            "label": "SUVs",
+            "icon": "🚙"
+          },
+          {
+            "id": "sedan",
+            "label": "Sedans",
+            "icon": "🏎️"
+          },
+          {
+            "id": "hatchback",
+            "label": "Hatchbacks",
+            "icon": "🚗"
+          },
+          {
+            "id": "luxury",
+            "label": "Luxury",
+            "icon": "✨"
+          }
         ]
+      },
+      "actions": {
+        "onSelect": {
+          "type": "SET_STATE",
+          "payload": {
+            "key": "selectedCategory",
+            "value": "{{event.id}}"
+          }
+        }
       }
     },
     {
-      "id": "banner_guarantee",
+      "id": "banner_assured",
       "type": "BANNER",
       "props": {
         "title": "7-Day Easy Return Guarantee",
@@ -53,7 +192,7 @@
         "type": "OPEN_BOTTOM_SHEET",
         "payload": {
           "title": "CARS24 7-Day Guarantee",
-          "content": "Buy with confidence! Test drive for 7 days up to 500 km. If you don't love it, return it for a full refund."
+          "content": "Test drive for 7 days up to 500 km. If you don't love it, return it for a full refund."
         }
       }
     },
@@ -61,14 +200,18 @@
       "id": "carousel_featured",
       "type": "CAROUSEL",
       "props": {
-        "title": "⚡ Hot Picked Cars Today",
-        "subtitle": "Handpicked top quality cars near Gurgaon",
+        "title": "⚡ Hot Picks Today",
+        "subtitle": "Handpicked quality cars in {{state.selectedCity}}",
         "itemWidth": 270
       },
       "children": [
         {
           "id": "car_1",
           "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "suv"]
+          },
           "props": {
             "title": "Hyundai Creta SX 1.5",
             "subtitle": "1.5 Petrol • Manual",
@@ -78,19 +221,39 @@
             "mileage": "24,500 km",
             "fuelType": "Petrol",
             "transmission": "Manual",
-            "tag": "140-Point Inspection Passed",
-            "imageUrl": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=500&q=80"
+            "tag": "140-Point Inspected",
+            "imageUrl": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_1}}"
           },
           "action": {
             "type": "NAVIGATE",
             "payload": {
               "screen": "CarDetails",
               "params": {
-                "carId": "car_1",
-                "title": "Hyundai Creta SX 1.5",
-                "price": "₹11.45 Lakh",
-                "year": 2022,
-                "mileage": "24,500 km"
+                "car": {
+                  "id": "car_1",
+                  "title": "Hyundai Creta SX 1.5",
+                  "price": "₹11.45 Lakh",
+                  "year": 2022,
+                  "mileage": "24,500 km",
+                  "fuel": "Petrol",
+                  "transmission": "Manual",
+                  "owner": "1st Owner",
+                  "emi24": "26,300",
+                  "emi36": "18,450",
+                  "emi48": "14,600",
+                  "emi60": "12,150",
+                  "imageUrl": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_1"
               }
             }
           }
@@ -98,6 +261,10 @@
         {
           "id": "car_2",
           "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "hatchback"]
+          },
           "props": {
             "title": "Maruti Swift ZXI+",
             "subtitle": "1.2 Dualjet Petrol",
@@ -108,18 +275,38 @@
             "fuelType": "Petrol",
             "transmission": "Manual",
             "tag": "Zero Down Payment",
-            "imageUrl": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=500&q=80"
+            "imageUrl": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_2}}"
           },
           "action": {
             "type": "NAVIGATE",
             "payload": {
               "screen": "CarDetails",
               "params": {
-                "carId": "car_2",
-                "title": "Maruti Swift ZXI+",
-                "price": "₹6.80 Lakh",
-                "year": 2021,
-                "mileage": "18,200 km"
+                "car": {
+                  "id": "car_2",
+                  "title": "Maruti Swift ZXI+",
+                  "price": "₹6.80 Lakh",
+                  "year": 2021,
+                  "mileage": "18,200 km",
+                  "fuel": "Petrol",
+                  "transmission": "Manual",
+                  "owner": "1st Owner",
+                  "emi24": "15,600",
+                  "emi36": "10,950",
+                  "emi48": "8,700",
+                  "emi60": "7,250",
+                  "imageUrl": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_2"
               }
             }
           }
@@ -127,6 +314,10 @@
         {
           "id": "car_3",
           "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "suv"]
+          },
           "props": {
             "title": "Tata Nexon XZ+ (S)",
             "subtitle": "1.2 Revotron Turbo",
@@ -136,19 +327,92 @@
             "mileage": "12,100 km",
             "fuelType": "Petrol",
             "transmission": "Automatic",
-            "tag": "5-Star Safety Rating",
-            "imageUrl": "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=500&q=80"
+            "tag": "5-Star Safety",
+            "imageUrl": "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_3}}"
           },
           "action": {
             "type": "NAVIGATE",
             "payload": {
               "screen": "CarDetails",
               "params": {
-                "carId": "car_3",
-                "title": "Tata Nexon XZ+ (S)",
-                "price": "₹9.25 Lakh",
-                "year": 2023,
-                "mileage": "12,100 km"
+                "car": {
+                  "id": "car_3",
+                  "title": "Tata Nexon XZ+ (S)",
+                  "price": "₹9.25 Lakh",
+                  "year": 2023,
+                  "mileage": "12,100 km",
+                  "fuel": "Petrol",
+                  "transmission": "Automatic",
+                  "owner": "1st Owner",
+                  "emi24": "21,250",
+                  "emi36": "14,900",
+                  "emi48": "11,800",
+                  "emi60": "9,850",
+                  "imageUrl": "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_3"
+              }
+            }
+          }
+        },
+        {
+          "id": "car_6",
+          "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "luxury"]
+          },
+          "props": {
+            "title": "BMW 3 Series 330i",
+            "subtitle": "2.0 Twin-Turbo Petrol",
+            "price": "₹28.90 Lakh",
+            "emi": "₹46,500",
+            "year": 2021,
+            "mileage": "31,000 km",
+            "fuelType": "Petrol",
+            "transmission": "Automatic",
+            "tag": "Luxury Certified",
+            "imageUrl": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_6}}"
+          },
+          "action": {
+            "type": "NAVIGATE",
+            "payload": {
+              "screen": "CarDetails",
+              "params": {
+                "car": {
+                  "id": "car_6",
+                  "title": "BMW 3 Series 330i",
+                  "price": "₹28.90 Lakh",
+                  "year": 2021,
+                  "mileage": "31,000 km",
+                  "fuel": "Petrol",
+                  "transmission": "Automatic",
+                  "owner": "2nd Owner",
+                  "emi24": "66,200",
+                  "emi36": "46,500",
+                  "emi48": "36,800",
+                  "emi60": "30,700",
+                  "imageUrl": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_6"
               }
             }
           }
@@ -156,18 +420,236 @@
       ]
     },
     {
-      "id": "fallback_demo_widget",
-      "type": "FUTURE_CAR_SCANNER_WIDGET",
+      "id": "emi_calculator",
+      "type": "CARD",
+      "style": {
+        "marginHorizontal": 16,
+        "marginVertical": 8
+      },
+      "children": [
+        {
+          "type": "TEXT",
+          "props": {
+            "text": "💰 EMI Calculator",
+            "variant": "sectionTitle"
+          }
+        },
+        {
+          "type": "TEXT",
+          "props": {
+            "text": "Pick a tenure — the EMI below updates from server-defined data.",
+            "variant": "caption",
+            "color": "muted"
+          },
+          "style": {
+            "marginTop": 2,
+            "marginBottom": 10
+          }
+        },
+        {
+          "id": "tenure_selector",
+          "type": "SEGMENTED_CONTROL",
+          "props": {
+            "selected": "{{state.selectedTenure}}",
+            "segments": [
+              {
+                "id": "24",
+                "label": "24 mo",
+                "emi": "26,300"
+              },
+              {
+                "id": "36",
+                "label": "36 mo",
+                "emi": "18,450"
+              },
+              {
+                "id": "48",
+                "label": "48 mo",
+                "emi": "14,600"
+              },
+              {
+                "id": "60",
+                "label": "60 mo",
+                "emi": "12,150"
+              }
+            ]
+          },
+          "actions": {
+            "onSelect": {
+              "type": "SET_STATE",
+              "payload": {
+                "values": {
+                  "selectedTenure": "{{event.id}}",
+                  "emiAmount": "{{event.emi}}"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "ROW",
+          "props": {
+            "justify": "space-between",
+            "align": "center"
+          },
+          "style": {
+            "marginTop": 12
+          },
+          "children": [
+            {
+              "type": "TEXT",
+              "props": {
+                "text": "₹{{state.emiAmount}}/mo",
+                "variant": "price",
+                "color": "primary"
+              }
+            },
+            {
+              "type": "BUTTON",
+              "props": {
+                "label": "View breakdown",
+                "variant": "secondary",
+                "size": "sm"
+              },
+              "action": {
+                "type": "OPEN_BOTTOM_SHEET",
+                "payload": {
+                  "title": "EMI Breakdown — Hyundai Creta SX",
+                  "body": [
+                    {
+                      "type": "COLUMN",
+                      "props": {
+                        "gap": 4
+                      },
+                      "children": [
+                        {
+                          "type": "SEGMENTED_CONTROL",
+                          "props": {
+                            "selected": "{{state.selectedTenure}}",
+                            "segments": [
+                              {
+                                "id": "24",
+                                "label": "24 mo",
+                                "emi": "26,300"
+                              },
+                              {
+                                "id": "36",
+                                "label": "36 mo",
+                                "emi": "18,450"
+                              },
+                              {
+                                "id": "48",
+                                "label": "48 mo",
+                                "emi": "14,600"
+                              },
+                              {
+                                "id": "60",
+                                "label": "60 mo",
+                                "emi": "12,150"
+                              }
+                            ]
+                          },
+                          "actions": {
+                            "onSelect": {
+                              "type": "SET_STATE",
+                              "payload": {
+                                "values": {
+                                  "selectedTenure": "{{event.id}}",
+                                  "emiAmount": "{{event.emi}}"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "SPACER",
+                          "props": {
+                            "height": 8
+                          }
+                        },
+                        {
+                          "type": "KEY_VALUE_ROW",
+                          "props": {
+                            "label": "Loan amount",
+                            "value": "₹10.30 Lakh"
+                          }
+                        },
+                        {
+                          "type": "KEY_VALUE_ROW",
+                          "props": {
+                            "label": "Interest rate",
+                            "value": "11.5% p.a."
+                          }
+                        },
+                        {
+                          "type": "KEY_VALUE_ROW",
+                          "props": {
+                            "label": "Tenure",
+                            "value": "{{state.selectedTenure}} months"
+                          }
+                        },
+                        {
+                          "type": "DIVIDER"
+                        },
+                        {
+                          "type": "KEY_VALUE_ROW",
+                          "props": {
+                            "label": "Monthly EMI",
+                            "value": "₹{{state.emiAmount}}",
+                            "emphasis": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback_demo",
+      "type": "AI_CAR_INSPECTOR_3D",
       "props": {
-        "title": "AI AR Car Scanner (v3.0 Only)"
+        "title": "AR Car Inspector",
+        "fallbackMessage": "3D inspection needs app v3 — update to try it."
+      }
+    },
+    {
+      "id": "version_gate_demo",
+      "type": "BANNER",
+      "minVersion": "2.0",
+      "props": {
+        "title": "Live Auction Bidding",
+        "subtitle": "Realtime bidding sections require schema v2.0"
+      },
+      "fallback": {
+        "type": "BANNER",
+        "props": {
+          "title": "Auctions are coming soon",
+          "subtitle": "Update your app to bid on cars in realtime",
+          "ctaText": "See how auctions work",
+          "badge": "COMING SOON",
+          "backgroundColor": "#1E1B4B",
+          "textColor": "#FFFFFF"
+        },
+        "action": {
+          "type": "OPEN_BOTTOM_SHEET",
+          "payload": {
+            "title": "Cars24 Auctions",
+            "content": "This fallback banner was served because the client is below schema v2.0 — the versioning story, live."
+          }
+        }
       }
     },
     {
       "id": "grid_popular",
       "type": "GRID",
       "props": {
-        "title": "🔥 Popular Cars Near You",
-        "subtitle": "Verified used cars with free home delivery",
+        "title": "🔥 Popular Near You",
+        "subtitle": "Verified cars with free home delivery",
         "columns": 2,
         "gap": 12
       },
@@ -175,6 +657,10 @@
         {
           "id": "car_4",
           "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "sedan"]
+          },
           "props": {
             "title": "Honda City ZX",
             "subtitle": "1.5 i-VTEC",
@@ -185,18 +671,38 @@
             "fuelType": "Petrol",
             "transmission": "CVT",
             "tag": "1st Owner",
-            "imageUrl": "https://images.unsplash.com/photo-1541348263662-e082662d82da?w=500&q=80"
+            "imageUrl": "https://images.unsplash.com/photo-1541348263662-e082662d82da?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_4}}"
           },
           "action": {
             "type": "NAVIGATE",
             "payload": {
               "screen": "CarDetails",
               "params": {
-                "carId": "car_4",
-                "title": "Honda City ZX",
-                "price": "₹10.50 Lakh",
-                "year": 2020,
-                "mileage": "36,000 km"
+                "car": {
+                  "id": "car_4",
+                  "title": "Honda City ZX",
+                  "price": "₹10.50 Lakh",
+                  "year": 2020,
+                  "mileage": "36,000 km",
+                  "fuel": "Petrol",
+                  "transmission": "CVT",
+                  "owner": "1st Owner",
+                  "emi24": "24,100",
+                  "emi36": "16,900",
+                  "emi48": "13,400",
+                  "emi60": "11,150",
+                  "imageUrl": "https://images.unsplash.com/photo-1541348263662-e082662d82da?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_4"
               }
             }
           }
@@ -204,6 +710,10 @@
         {
           "id": "car_5",
           "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "suv"]
+          },
           "props": {
             "title": "Kia Seltos HTX",
             "subtitle": "1.5 Diesel",
@@ -214,18 +724,144 @@
             "fuelType": "Diesel",
             "transmission": "Manual",
             "tag": "CARS24 Certified",
-            "imageUrl": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=500&q=80"
+            "imageUrl": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_5}}"
           },
           "action": {
             "type": "NAVIGATE",
             "payload": {
               "screen": "CarDetails",
               "params": {
-                "carId": "car_5",
-                "title": "Kia Seltos HTX",
-                "price": "₹12.90 Lakh",
-                "year": 2021,
-                "mileage": "29,400 km"
+                "car": {
+                  "id": "car_5",
+                  "title": "Kia Seltos HTX",
+                  "price": "₹12.90 Lakh",
+                  "year": 2021,
+                  "mileage": "29,400 km",
+                  "fuel": "Diesel",
+                  "transmission": "Manual",
+                  "owner": "1st Owner",
+                  "emi24": "29,700",
+                  "emi36": "20,800",
+                  "emi48": "16,450",
+                  "emi60": "13,700",
+                  "imageUrl": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_5"
+              }
+            }
+          }
+        },
+        {
+          "id": "car_7",
+          "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "hatchback"]
+          },
+          "props": {
+            "title": "Maruti Baleno Alpha",
+            "subtitle": "1.2 Petrol",
+            "price": "₹7.35 Lakh",
+            "emi": "₹11,850",
+            "year": 2022,
+            "mileage": "15,800 km",
+            "fuelType": "Petrol",
+            "transmission": "AMT",
+            "tag": "Low Mileage",
+            "imageUrl": "https://images.unsplash.com/photo-1502877338535-766e1452684a?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_7}}"
+          },
+          "action": {
+            "type": "NAVIGATE",
+            "payload": {
+              "screen": "CarDetails",
+              "params": {
+                "car": {
+                  "id": "car_7",
+                  "title": "Maruti Baleno Alpha",
+                  "price": "₹7.35 Lakh",
+                  "year": 2022,
+                  "mileage": "15,800 km",
+                  "fuel": "Petrol",
+                  "transmission": "AMT",
+                  "owner": "1st Owner",
+                  "emi24": "16,850",
+                  "emi36": "11,850",
+                  "emi48": "9,400",
+                  "emi60": "7,850",
+                  "imageUrl": "https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_7"
+              }
+            }
+          }
+        },
+        {
+          "id": "car_8",
+          "type": "CAR_CARD",
+          "visibleWhen": {
+            "stateKey": "selectedCategory",
+            "oneOf": ["all", "sedan"]
+          },
+          "props": {
+            "title": "Hyundai Verna SX(O)",
+            "subtitle": "1.5 Turbo",
+            "price": "₹13.20 Lakh",
+            "emi": "₹21,300",
+            "year": 2023,
+            "mileage": "9,600 km",
+            "fuelType": "Petrol",
+            "transmission": "DCT",
+            "tag": "Almost New",
+            "imageUrl": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=500&q=80",
+            "isWishlisted": "{{state.wishlist contains car_8}}"
+          },
+          "action": {
+            "type": "NAVIGATE",
+            "payload": {
+              "screen": "CarDetails",
+              "params": {
+                "car": {
+                  "id": "car_8",
+                  "title": "Hyundai Verna SX(O)",
+                  "price": "₹13.20 Lakh",
+                  "year": 2023,
+                  "mileage": "9,600 km",
+                  "fuel": "Petrol",
+                  "transmission": "DCT",
+                  "owner": "1st Owner",
+                  "emi24": "30,400",
+                  "emi36": "21,300",
+                  "emi48": "16,850",
+                  "emi60": "14,050",
+                  "imageUrl": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80"
+                }
+              }
+            }
+          },
+          "actions": {
+            "onWishlistPress": {
+              "type": "TOGGLE_IN_LIST",
+              "payload": {
+                "key": "wishlist",
+                "value": "car_8"
               }
             }
           }
@@ -233,11 +869,61 @@
       ]
     },
     {
-      "id": "banner_api_test",
+      "id": "value_props",
+      "type": "ROW",
+      "props": {
+        "gap": 10,
+        "paddingHorizontal": 16
+      },
+      "style": {
+        "marginVertical": 8
+      },
+      "forEach": [
+        {
+          "id": "vp_inspection",
+          "icon": "🔍",
+          "value": "140",
+          "label": "Point Inspection"
+        },
+        {
+          "id": "vp_returns",
+          "icon": "↩️",
+          "value": "7 Days",
+          "label": "Easy Returns"
+        },
+        {
+          "id": "vp_warranty",
+          "icon": "🛡️",
+          "value": "1 Year",
+          "label": "Warranty"
+        }
+      ],
+      "template": {
+        "type": "STAT_TILE",
+        "props": {
+          "icon": "{{item.icon}}",
+          "value": "{{item.value}}",
+          "label": "{{item.label}}"
+        }
+      }
+    },
+    {
+      "type": "TEXT",
+      "props": {
+        "text": "Prices dropped on 200+ cars today",
+        "variant": "subtitle",
+        "align": "center",
+        "color": "primary"
+      },
+      "style": { "marginTop": 12 }
+    },
+
+    {
+      "id": "banner_sell",
       "type": "BANNER",
       "props": {
         "title": "Sell Your Car in 1 Hour",
-        "subtitle": "Get instant quote & instant payment at your doorstep",
+        "subtitle": "Instant quote & payment at your doorstep",
         "ctaText": "Get Free Valuation",
         "badge": "INSTANT CASH",
         "backgroundColor": "#FF6B00",
@@ -247,7 +933,9 @@
         "type": "API_CALL",
         "payload": {
           "url": "https://api.cars24.com/v1/valuation/request",
-          "method": "POST"
+          "method": "POST",
+          "title": "Valuation requested",
+          "content": "POST /v1/valuation/request — mocked 200 OK. A real client would SET_STATE from the response."
         }
       }
     },

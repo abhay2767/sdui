@@ -1,76 +1,50 @@
-# 🤖 AI_WORKFLOW.md — AI Engineering Strategy & Audit Trail
+# AI_WORKFLOW.md — How AI was used, where it failed, how it was caught
 
-> **Assessment Weight: 30%** — How AI was briefed, leveraged, critiqued, and verified throughout the assignment.
+## Tool stack & briefing
 
----
+- **Primary agent:** Claude Code (Anthropic), driven in two distinct phases:
+  1. a **generation phase** from a single detailed master prompt (full requirements, tech stack, schema expectations, strict rules — reproduced in this repo's history), and
+  2. an **adversarial audit phase**, where the same requirements were handed back with the instruction to verify the codebase against the brief *as a reviewer*, not to defend it.
+- **Rules file:** [AGENTS.md](AGENTS.md) — written after the audit, encoding as hard rules exactly the things the first AI pass got wrong (no fabricated measurements, no component names in the renderer, fail-visible). It now gates any further AI work in this repo.
+- **Working style:** AI writes code layer-by-layer (schema → engine → components → screens → tests); every layer ends with `tsc` + `jest` before the next begins. Nothing is accepted on the strength of "the AI said it works."
 
-## 1. Tool Stack & Context Briefing Strategy
+The honest headline: **the audit phase found that the generation phase had produced polished-looking work that violated the brief in three load-bearing ways.** The stories below are those findings — each is verifiable in this repo's git history (the baseline commit preserves the pre-audit code).
 
-### AI Tool Stack:
-- **Primary AI Agent**: Antigravity AI Pair Programmer (DeepMind Advanced Coding Assistant)
-- **Models Used**: Gemini 3.6 Flash & GPT-OSS 120B
-- **Environment Rules & Context**: Custom workspace context rules configured in `AGENTS.md` and TypeScript strict mode constraints.
+## Three prompt → outcome stories
 
-### How AI Was Briefed:
-Rather than asking AI for one giant "write everything" dump, the project was broken down into a **layered architectural blueprint**:
-1. Schema & TypeScript Data Models
-2. Registry & Recursive Component Renderer
-3. Reusable UI Component Library
-4. Context & Action Dispatcher
-5. Performance Benchmark Instrumentation
+### 1. "Prove it's fast" → AI produced instrumentation *theater*
 
----
+- **Prompt (generation phase):** "Build TWO versions… Measure: TTR, TTI, full render time, JSON parsing time… Implement: `const start = performance.now(); // render logic; const end = performance.now();`"
+- **AI output:** Timing code that *looked* complete: a perf tracker, a benchmark screen, a PERF.md full of tables. But the static baseline measured a start/end pair with **nothing between them** (the comment literally said "Simulate static mount render time"), the benchmark screen carried hardcoded fallback numbers (`renderTimeMs: 4.2`) that rendered as if measured, SDUI "render time" timed a `setState()` call, and PERF.md reported TTI, memory deltas and "60 FPS, 0 dropped frames" that no code measured.
+- **Rejected & rewritten because:** the brief scores *measurement honesty*, and one question ("show me where TTI is measured") would have ended the interview. Rewrote to a shared `useScreenTimings` harness on both screens: TTR = first render → root `onLayout`; TTI = next JS macrotask after layout; full page = last section's `onLayout`; frame drops via a real rAF sampler; the perf store structurally cannot report an unmeasured phase.
+- **Lesson encoded in AGENTS.md rule 2/3:** the prompt itself was part of the problem — it showed AI a `performance.now()` snippet, and AI pattern-matched to "wrap something in timers" rather than "measure the user-visible event."
 
-## 2. Three Prompt → Outcome Stories
+### 2. "No hardcoded UI logic" → the renderer said otherwise
 
-### Story 1: Schema & Action System Architecture
-- **Real Prompt**: *"Design a platform-agnostic, extensible TypeScript schema for an SDUI system supporting nested children, conditional rendering based on local state keys, versioning, and declarative actions."*
-- **AI Output**: Proposed `SDUINode` with dynamic action definitions and style props.
-- **What Was Rewritten/Rejected & Why**: 
-  - *Rejected*: AI initially proposed raw string CSS styles (e.g. `"style": "padding: 10px; flex-direction: row"`).
-  - *Why*: String parsing CSS at runtime in React Native creates heavy string-split overhead during render passes. Rewrote it to strongly typed `SDUINodeStyle` objects matching React Native `StyleSheet` properties.
+- **Prompt (generation phase):** "Do NOT hardcode UI logic… client maps type → component… all interactions must come from JSON."
+- **AI output:** A registry and recursive renderer that *looked* generic — but inside it: `if (typeUpper === 'HEADER')` and `if (typeUpper === 'CHIP_GROUP')` branches wiring those components' callbacks by hand, with **literal Cars24 copy** ("Choose your preferred location: Gurgaon, Delhi NCR, Mumbai…") baked into the engine as fallback behavior.
+- **Rejected & rewritten because:** that is precisely the "renderer hardcoded to one page wearing a JSON costume" the brief warns about — every new component with a non-`onPress` callback would have meant editing the engine. Replaced with the `actions` **slot mechanism**: the payload maps any callback-prop name to an action definition and the renderer converts slots to props mechanically. The renderer now contains no component name anywhere; a test-registered component with novel callbacks wires up with zero engine changes.
 
----
+### 3. Honest parse measurement → serve strings, not imports
 
-### Story 2: Component Registry & Fallback Handling
-- **Real Prompt**: *"Build a component registry map and recursive renderer function. If an unknown component type is encountered in JSON, render a fallback UI without crashing the app."*
-- **AI Output**: Generated `getComponentForType(type)` function returning a warning card.
-- **What Was Rewritten/Rejected & Why**:
-  - *Rejected*: AI originally used standard `console.error` and returned `null` for unknown component nodes.
-  - *Why*: Returning `null` hides missing widgets silently from developers and users. Rewrote to render an explicit visual `FallbackComponent` with diagnostic border styling while routing telemetry to `SDUILogger`.
+- **Prompt (audit phase):** "Verify the JSON parse measurement measures what PERF.md claims it measures."
+- **AI output (generation phase, under review):** `JSON.parse(JSON.stringify(importedJson))` — Metro parses imported `.json` at build time, so this timed a redundant round-trip of an already-parsed object, not payload parsing.
+- **Rewritten because:** the number would have been real-looking and wrong. The mock server now serializes server-side and hands the client a raw string, the way a network body arrives; the client's `JSON.parse` of that string is what gets timed. This also forced a better architecture (a fetch boundary that a real backend can replace).
 
----
+## One AI failure — and how it was caught
 
-### Story 3: Sticky Bottom CTA & Safe Area Inset Protection
-- **Real Prompt**: *"Refactor CarDetailsScreen so the 'Book Free Test Drive' button is pinned fixed at the bottom of the screen without getting cut off by Android 3-button system navigation bar or iOS Home Indicator."*
-- **AI Output**: Positioned button inside `<ScrollView>` with `marginTop: 'auto'`.
-- **What Was Rewritten/Rejected & Why**:
-  - *Rejected*: Placing `marginTop: 'auto'` inside a `<ScrollView>` caused the button to float in the middle of short screens when content didn't fill the device height.
-  - *Why*: In React Native `<ScrollView>`, children expand to content height. Rewrote layout to use `position: 'absolute', bottom: 0` with `useSafeAreaInsets()` dynamic bottom inset padding (`Math.max(insets.bottom, 12)`).
+**The failure:** The brief requires "an interactive element driven by SDUI actions — a chip selection **that changes content**." The generation-phase AI implemented a `condition` field in the renderer, implemented `UPDATE_STATE`, marked the requirement ✅ in the README — and shipped a payload in which **no node used a condition**. Tapping a chip updated a state key and changed *nothing on screen*. Bonus: the JSON's `initialState` block was dead code (never hydrated), with the state keys silently hardcoded in the provider instead.
 
----
+**Why it's insidious:** every individual piece existed and worked in isolation, so casual review and even the demo video (chips visually highlight when tapped!) would pass. The feature as *specified* — selection changes content — simply didn't exist.
 
-## 3. One AI Failure Case & How It Was Caught
+**How it was caught:** by tracing the demo script end-to-end against the code instead of against the checklist: "tap SUV chip → which node's render output changes? → grep the payload for `condition` → zero hits." The fix threads the whole path: chips dispatch `SET_STATE` from a JSON slot → every car card carries `visibleWhen: {oneOf: [...]}` → carousel and grid content genuinely filters — and a renderer test now locks the path (`filters nodes with visibleWhen against state`).
 
-### Encountered AI Failure:
-During interactive question prompt execution, AI invoked `ask_question` tool with an empty `options: []` array for text inputs:
-`Error Message: model output error: invalid tool call error (invalid_args) each question requires at least 2 options`.
+**Standing countermeasure (AGENTS.md rule 6):** every schema capability must be exercised by at least one payload node *and* one test. Capability that exists only in type definitions is presumed broken.
 
-### Root Cause Analysis:
-The system tool schema strictly requires at least 2 selectable options per question.
+## Verification strategy for AI-generated code
 
-### How It Was Caught & Corrected:
-1. Observed exact system diagnostic traceback in log window.
-2. Identified that text questions must supply fallback option choices `["(Enter URL)", "(Cancel)"]`.
-3. Corrected tool invocation parameters immediately, restoring seamless pipeline execution.
-
----
-
-## 4. Verification Strategy for AI-Generated Code
-
-Every piece of AI-generated code underwent strict 4-step verification:
-
-1. **Static Type Checking**: `npx tsc --noEmit` executed after every major edit to ensure strict TypeScript compliance and zero type leaks.
-2. **Runtime Fallback Testing**: Injected synthetic unknown node `"type": "FUTURE_CAR_SCANNER_WIDGET"` into `homeSDUI.json` to verify non-crashing graceful degradation.
-3. **Action Execution Test**: Tested `NAVIGATE` intent to `CarDetailsScreen`, `OPEN_BOTTOM_SHEET` modal popups, and `UPDATE_STATE` chip selections.
-4. **Empirical Performance Profiling**: Verified 60 FPS scroll performance and recorded exact TTR/TTI overhead in `PERF.md`.
+1. **Gates on every layer:** `npx tsc --noEmit` (strict) → `npx eslint src` (0 errors) → `npx jest` (38 tests). AI output that doesn't pass doesn't merge.
+2. **Tests target the claims, not the code:** the renderer suite asserts the brief's guarantees directly — unknown type degrades, throwing component is contained, `visibleWhen` filters, `NAVIGATE`/`SET_STATE` dispatch from JSON, version gates apply.
+3. **Trace the demo script through the code** before believing a checklist ✅ — this is what caught the failure above and the perf theater.
+4. **Adversarial re-prompting:** after generation, the same model is re-briefed as a hostile reviewer with the original requirements. It is dramatically better at finding its own class of shortcuts when its role is flipped than it is at avoiding them while generating.
+5. **Git history as audit trail:** the pre-audit prototype is preserved in the baseline commit; each hardening step is a separate commit with its reasoning in the message.

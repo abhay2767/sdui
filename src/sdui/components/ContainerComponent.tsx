@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
+import { universalPaddingHorizontal } from './tokens';
 
 interface ContainerComponentProps {
   children?: React.ReactNode;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }
 
-export const ContainerComponent: React.FC<ContainerComponentProps> = ({
+export const ContainerComponent: React.FC<ContainerComponentProps> = React.memo(({
   children,
   style,
   onPress,
@@ -21,10 +22,12 @@ export const ContainerComponent: React.FC<ContainerComponentProps> = ({
   }
 
   return <View style={[styles.default, style]}>{children}</View>;
-};
+});
+
+ContainerComponent.displayName = 'ContainerComponent';
 
 const styles = StyleSheet.create({
   default: {
-    paddingHorizontal: 16,
+    paddingHorizontal: universalPaddingHorizontal,
   },
 });

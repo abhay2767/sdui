@@ -1,42 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { perfTracker, PerfMetric } from '../sdui/utils/perf';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { perfStore, ScreenTimings, FrameStats } from '../sdui/utils/perf';
 import { logger, LogEntry } from '../sdui/utils/logger';
+import type { RootStackParamList } from '../navigation/navigationRef';
+import { COLORS, RADIUS, FONTS, hs, vs, msc } from '../theme';
 
-interface PerfScreenProps {
-  navigation: any;
+type Props = NativeStackScreenProps<RootStackParamList, 'PerfBenchmark'>;
+
+const SDUI_KEY = 'SDUI_HOME';
+const STATIC_KEY = 'STATIC_HOME';
+
+function formatMs(value?: number): string {
+  return value !== undefined ? `${value.toFixed(1)} ms` : 'not measured';
 }
 
-export const PerfScreen: React.FC<PerfScreenProps> = ({ navigation }) => {
-  const [metrics, setMetrics] = useState<Record<string, PerfMetric>>({});
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+/**
+ * Live benchmark viewer.
+ *
+ * Every number on this screen comes from perfStore, which only records phases
+ * that actually happened. Anything not yet measured renders as "not measured" —
+ * there are no placeholder values. To fill the static column, open the Static
+ * screen first (button below), then come back.
+ */
+export const PerfScreen: React.FC<Props> = ({ navigation }) => {
+  const [, forceRender] = useReducer(count => count + 1, 0);
+  useEffect(() => perfStore.subscribe(forceRender), []);
 
-  useEffect(() => {
-    setMetrics(perfTracker.getAllMetrics());
-    setLogs(logger.getLogs());
-  }, []);
+  const sdui = perfStore.screen(SDUI_KEY);
+  const stat = perfStore.screen(STATIC_KEY);
+  const sduiFrames = perfStore.frames(SDUI_KEY);
+  const statFrames = perfStore.frames(STATIC_KEY);
+  const logs = logger.getLogs();
 
-  const staticMetric = metrics['STATIC_HOME_SCREEN'] || {
-    name: 'Static Version',
-    parseTimeMs: 0.0,
-    renderTimeMs: 4.2,
-    totalTimeMs: 4.2,
-    nodeCount: 12,
+  const overhead = (metric: keyof ScreenTimings): string => {
+    const a = stat?.[metric];
+    const b = sdui?.[metric];
+    if (typeof a !== 'number' || typeof b !== 'number') return '—';
+    const delta = b - a;
+    const pct = a > 0 ? ` (${delta >= 0 ? '+' : ''}${((delta / a) * 100).toFixed(0)}%)` : '';
+    return `${delta >= 0 ? '+' : ''}${delta.toFixed(1)} ms${pct}`;
   };
 
-  const sduiMetric = metrics['SDUI_HOME_SCREEN'] || {
-    name: 'SDUI Version',
-    parseTimeMs: 1.8,
-    renderTimeMs: 6.5,
-    totalTimeMs: 8.3,
-    nodeCount: 15,
-  };
+  const row = (label: string, staticValue: string, sduiValue: string, delta?: string) => (
+    <View style={styles.tableRow} key={label}>
+      <Text style={[styles.cell, styles.colName]}>{label}</Text>
+      <Text style={[styles.cell, styles.colVal]}>{staticValue}</Text>
+      <Text style={[styles.cell, styles.colVal]}>{sduiValue}</Text>
+      <Text style={[styles.cell, styles.colVal, styles.deltaText]}>{delta ?? ''}</Text>
+    </View>
+  );
 
-  const overheadMs = (sduiMetric.totalTimeMs - staticMetric.totalTimeMs).toFixed(2);
-  const overheadPct = (
-    ((sduiMetric.totalTimeMs - staticMetric.totalTimeMs) / (staticMetric.totalTimeMs || 1)) * 100
-  ).toFixed(1);
+  const frameLine = (name: string, stats?: FrameStats) =>
+    stats
+      ? `${name}: ${stats.fps.toFixed(1)} fps · ${stats.drops} dropped · worst ${stats.worstFrameMs.toFixed(0)}ms over ${(stats.durationMs / 1000).toFixed(1)}s`
+      : `${name}: not sampled — tap "🎞 5s frames" on that screen while scrolling`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -44,84 +63,59 @@ export const PerfScreen: React.FC<PerfScreenProps> = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.topTitle}>⚡ Performance Benchmark</Text>
-        <TouchableOpacity onPress={() => {
-          setMetrics(perfTracker.getAllMetrics());
-          setLogs(logger.getLogs());
-        }}>
-          <Text style={styles.refreshText}>🔄 Refresh</Text>
+        <Text style={styles.topTitle}>⚡ Benchmark</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('HomeStatic')}>
+          <Text style={styles.refreshText}>Open Static ↗</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Metric Comparison Cards */}
-        <Text style={styles.sectionHeader}>Static UI vs SDUI Engine Comparison</Text>
+        <Text style={styles.sectionHeader}>Static baseline vs SDUI engine</Text>
+        <Text style={styles.methodNote}>
+          Same device, same session, same leaf components, same measurement
+          hooks. Values appear only after each screen has actually been opened
+          and measured — nothing here is precomputed.
+        </Text>
 
         <View style={styles.tableCard}>
           <View style={styles.tableHeader}>
             <Text style={[styles.cell, styles.colName, styles.headerText]}>Metric</Text>
-            <Text style={[styles.cell, styles.colVal, styles.headerText]}>Static UI</Text>
-            <Text style={[styles.cell, styles.colVal, styles.headerText]}>SDUI Engine</Text>
+            <Text style={[styles.cell, styles.colVal, styles.headerText]}>Static</Text>
+            <Text style={[styles.cell, styles.colVal, styles.headerText]}>SDUI</Text>
+            <Text style={[styles.cell, styles.colVal, styles.headerText]}>Overhead</Text>
           </View>
-
-          <View style={styles.tableRow}>
-            <Text style={[styles.cell, styles.colName]}>JSON Parse Time</Text>
-            <Text style={[styles.cell, styles.colVal]}>0.00 ms</Text>
-            <Text style={[styles.cell, styles.colVal, styles.highlightText]}>{sduiMetric.parseTimeMs.toFixed(2)} ms</Text>
-          </View>
-
-          <View style={styles.tableRow}>
-            <Text style={[styles.cell, styles.colName]}>UI Render Time</Text>
-            <Text style={[styles.cell, styles.colVal]}>{staticMetric.renderTimeMs.toFixed(2)} ms</Text>
-            <Text style={[styles.cell, styles.colVal]}>{sduiMetric.renderTimeMs.toFixed(2)} ms</Text>
-          </View>
-
-          <View style={[styles.tableRow, styles.tableRowHighlight]}>
-            <Text style={[styles.cell, styles.colName, styles.boldText]}>Total TTR (Time to Render)</Text>
-            <Text style={[styles.cell, styles.colVal, styles.boldText, { color: '#38BDF8' }]}>
-              {staticMetric.totalTimeMs.toFixed(2)} ms
-            </Text>
-            <Text style={[styles.cell, styles.colVal, styles.boldText, { color: '#10B981' }]}>
-              {sduiMetric.totalTimeMs.toFixed(2)} ms
-            </Text>
-          </View>
-
-          <View style={styles.tableRow}>
-            <Text style={[styles.cell, styles.colName]}>Rendered Component Nodes</Text>
-            <Text style={[styles.cell, styles.colVal]}>{staticMetric.nodeCount}</Text>
-            <Text style={[styles.cell, styles.colVal]}>{sduiMetric.nodeCount}</Text>
-          </View>
-
-          <View style={styles.tableRow}>
-            <Text style={[styles.cell, styles.colName]}>Target Frame Rate</Text>
-            <Text style={[styles.cell, styles.colVal]}>60 FPS</Text>
-            <Text style={[styles.cell, styles.colVal]}>60 FPS</Text>
-          </View>
+          {row('JSON parse', 'n/a', formatMs(sdui?.parseMs))}
+          {row('Schema prep', 'n/a', formatMs(sdui?.prepareMs))}
+          {row('TTR (above fold)', formatMs(stat?.ttrMs), formatMs(sdui?.ttrMs), overhead('ttrMs'))}
+          {row('TTI (tappable)', formatMs(stat?.ttiMs), formatMs(sdui?.ttiMs), overhead('ttiMs'))}
+          {row('Full page', formatMs(stat?.fullPageMs), formatMs(sdui?.fullPageMs), overhead('fullPageMs'))}
+          {row(
+            'Node count',
+            stat ? '—' : 'not measured',
+            sdui?.nodeCount !== undefined ? String(sdui.nodeCount) : 'not measured',
+          )}
         </View>
 
-        {/* Overhead Analysis Summary */}
-        <View style={styles.overheadCard}>
-          <Text style={styles.overheadTitle}>📊 SDUI Engine Overhead Analysis</Text>
-          <Text style={styles.overheadText}>
-            Overhead Difference: <Text style={styles.boldText}>+{overheadMs} ms</Text> (~{overheadPct}% of hardcoded baseline).
-          </Text>
-          <Text style={styles.overheadSubtext}>
-            • The JSON parsing overhead is negligible (~1.8ms on modern JS engines).{'\n'}
-            • Component memoization (`React.memo`) ensures zero dropped frames during scrolling.{'\n'}
-            • Fallback error boundaries guarantee 100% crash protection for unsupported nodes.
-          </Text>
+        <Text style={styles.sectionHeader}>Scroll performance</Text>
+        <View style={styles.frameCard}>
+          <Text style={styles.frameLine}>{frameLine('SDUI', sduiFrames)}</Text>
+          <Text style={styles.frameLine}>{frameLine('Static', statFrames)}</Text>
         </View>
 
-        {/* SDUI Event Log Stream */}
-        <Text style={styles.sectionHeader}>📋 SDUI Engine Event Logs & Telemetry</Text>
+        <Text style={styles.sectionHeader}>📋 Engine event log</Text>
         <View style={styles.logConsole}>
           {logs.length === 0 ? (
-            <Text style={styles.logEmpty}>No events logged yet. Trigger fallback or actions on SDUI home.</Text>
+            <Text style={styles.logEmpty}>No events yet.</Text>
           ) : (
-            logs.slice(0, 15).map((log, idx) => (
-              <View key={idx} style={styles.logRow}>
+            logs.slice(0, 20).map((log: LogEntry, index: number) => (
+              <View key={index} style={styles.logRow}>
                 <Text style={styles.logTime}>[{log.timestamp.split('T')[1]?.slice(0, 8)}]</Text>
-                <Text style={[styles.logTag, log.level === 'warn' || log.level === 'error' ? styles.logTagWarn : null]}>
+                <Text
+                  style={[
+                    styles.logTag,
+                    log.level === 'warn' || log.level === 'error' ? styles.logTagWarn : null,
+                  ]}
+                >
                   [{log.tag}]
                 </Text>
                 <Text style={styles.logMsg}>{log.message}</Text>
@@ -137,156 +131,146 @@ export const PerfScreen: React.FC<PerfScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.chromeBg,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(10),
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: COLORS.chromeLine,
   },
   backBtn: {
-    padding: 4,
+    padding: hs(4),
   },
   backText: {
-    color: '#FF6B00',
-    fontSize: 15,
+    color: COLORS.primary,
+    fontSize: msc(15),
     fontWeight: '700',
   },
   topTitle: {
-    color: '#F8FAFC',
-    fontSize: 16,
+    color: COLORS.onDark,
+    fontSize: msc(16),
     fontWeight: '800',
   },
   refreshText: {
-    color: '#38BDF8',
-    fontSize: 13,
+    color: COLORS.info,
+    fontSize: msc(13),
     fontWeight: '600',
   },
   scroll: {
-    padding: 16,
+    padding: hs(16),
   },
   sectionHeader: {
-    fontSize: 15,
+    fontSize: msc(15),
     fontWeight: '800',
-    color: '#F8FAFC',
-    marginTop: 12,
-    marginBottom: 10,
+    color: COLORS.onDark,
+    marginTop: vs(12),
+    marginBottom: vs(8),
+  },
+  methodNote: {
+    fontSize: msc(12),
+    color: COLORS.faint,
+    lineHeight: msc(17),
+    marginBottom: vs(10),
   },
   tableCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
+    backgroundColor: COLORS.chromeSurface,
+    borderRadius: RADIUS.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#334155',
-    marginBottom: 16,
+    borderColor: COLORS.inkSoft,
+    marginBottom: vs(8),
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    backgroundColor: COLORS.chromeBg,
+    paddingVertical: vs(12),
+    paddingHorizontal: hs(12),
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    borderBottomColor: COLORS.inkSoft,
   },
   headerText: {
     fontWeight: '800',
-    color: '#94A3B8',
-    fontSize: 12,
+    color: COLORS.faint,
+    fontSize: msc(11),
     textTransform: 'uppercase',
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: vs(10),
+    paddingHorizontal: hs(12),
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  tableRowHighlight: {
-    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+    borderBottomColor: COLORS.chromeBg,
   },
   cell: {
-    fontSize: 12,
-    color: '#E2E8F0',
+    fontSize: msc(11),
+    color: COLORS.line,
   },
   colName: {
-    flex: 2,
+    flex: 1.6,
   },
   colVal: {
     flex: 1,
     textAlign: 'right',
   },
-  boldText: {
-    fontWeight: '800',
-  },
-  highlightText: {
-    color: '#FF6B00',
+  deltaText: {
+    color: COLORS.warning,
     fontWeight: '700',
   },
-  overheadCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
-    padding: 16,
+  frameCard: {
+    backgroundColor: COLORS.chromeSurface,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#334155',
-    marginBottom: 16,
+    borderColor: COLORS.inkSoft,
+    padding: hs(14),
+    marginBottom: vs(8),
   },
-  overheadTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#10B981',
-    marginBottom: 6,
-  },
-  overheadText: {
-    fontSize: 13,
-    color: '#F8FAFC',
-    marginBottom: 8,
-  },
-  overheadSubtext: {
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 18,
+  frameLine: {
+    fontSize: msc(12),
+    color: COLORS.line,
+    fontFamily: FONTS.mono,
+    marginBottom: vs(6),
   },
   logConsole: {
     backgroundColor: '#020617',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: RADIUS.md,
+    padding: hs(12),
     borderWidth: 1,
-    borderColor: '#1E293B',
-    maxHeight: 250,
+    borderColor: COLORS.chromeLine,
+    maxHeight: vs(280),
   },
   logEmpty: {
-    color: '#64748B',
-    fontSize: 12,
+    color: COLORS.muted,
+    fontSize: msc(12),
     fontStyle: 'italic',
   },
   logRow: {
     flexDirection: 'row',
-    marginBottom: 6,
+    marginBottom: vs(6),
     flexWrap: 'wrap',
   },
   logTime: {
-    color: '#64748B',
-    fontSize: 10,
-    fontFamily: 'monospace',
-    marginRight: 6,
+    color: COLORS.muted,
+    fontSize: msc(10),
+    fontFamily: FONTS.mono,
+    marginRight: hs(6),
   },
   logTag: {
-    color: '#38BDF8',
-    fontSize: 10,
+    color: COLORS.info,
+    fontSize: msc(10),
     fontWeight: '700',
-    fontFamily: 'monospace',
-    marginRight: 6,
+    fontFamily: FONTS.mono,
+    marginRight: hs(6),
   },
   logTagWarn: {
-    color: '#F59E0B',
+    color: COLORS.warning,
   },
   logMsg: {
-    color: '#E2E8F0',
-    fontSize: 11,
-    fontFamily: 'monospace',
+    color: COLORS.line,
+    fontSize: msc(11),
+    fontFamily: FONTS.mono,
   },
 });

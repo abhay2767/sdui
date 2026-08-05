@@ -1,24 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { COLORS, hs, vs, msc, useResponsive, universalPaddingHorizontal } from './tokens';
 
 interface CarouselComponentProps {
   title?: string;
   subtitle?: string;
   children?: React.ReactNode;
+  /** Design-spec item width (px on the 375pt baseline); scaled and clamped. */
   itemWidth?: number;
 }
 
-export const CarouselComponent: React.FC<CarouselComponentProps> = ({
+export const CarouselComponent: React.FC<CarouselComponentProps> = React.memo(({
   title,
   subtitle,
   children,
   itemWidth = 260,
 }) => {
+  const { window, isTablet } = useResponsive();
+
+  // Scale the server-sent width, then clamp so a card can never exceed the
+  // viewport on small phones, and never balloons on tablets — instead more
+  // of the next card peeks, which is the correct rail affordance.
+  const scaled = hs(itemWidth);
+  const maxWidth = isTablet ? 360 : window.width - hs(56);
+  const resolvedWidth = Math.min(scaled, maxWidth);
+  const gap = hs(12);
+
   return (
     <View style={styles.container}>
       {title ? (
         <View style={styles.headerRow}>
-          <View>
+          <View style={styles.headerText}>
             <Text style={styles.title}>{title}</Text>
             {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
@@ -30,41 +42,43 @@ export const CarouselComponent: React.FC<CarouselComponentProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={itemWidth + 12}
+        snapToInterval={resolvedWidth + gap}
       >
         {React.Children.map(children, child => (
-          <View style={[styles.itemWrapper, { width: itemWidth }]}>{child}</View>
+          <View style={{ width: resolvedWidth, marginRight: gap }}>{child}</View>
         ))}
       </ScrollView>
     </View>
   );
-};
+});
+
+CarouselComponent.displayName = 'CarouselComponent';
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
+    marginVertical: vs(10),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingHorizontal: universalPaddingHorizontal,
+    marginBottom: vs(8),
+  },
+  headerText: {
+    flexShrink: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: msc(18),
     fontWeight: '800',
-    color: '#0F172A',
+    color: COLORS.ink,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    fontSize: msc(12),
+    color: COLORS.muted,
+    marginTop: vs(2),
   },
   scrollContent: {
-    paddingHorizontal: 16,
-  },
-  itemWrapper: {
-    marginRight: 12,
+    paddingHorizontal: universalPaddingHorizontal,
   },
 });

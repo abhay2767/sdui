@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS, RADIUS, hs, vs, msc, universalPaddingHorizontal } from './tokens';
 
 interface HeaderComponentProps {
   title?: string;
@@ -12,7 +13,7 @@ interface HeaderComponentProps {
   onFilterPress?: () => void;
 }
 
-export const HeaderComponent: React.FC<HeaderComponentProps> = ({
+export const HeaderComponent: React.FC<HeaderComponentProps> = React.memo(({
   title = 'CARS24',
   subtitle = 'Quality Used Cars',
   location = 'New Delhi ▾',
@@ -26,32 +27,32 @@ export const HeaderComponent: React.FC<HeaderComponentProps> = ({
     <View style={styles.container}>
       {/* Top Header Bar */}
       <View style={styles.topRow}>
-        <View>
-          <Text style={styles.brandTitle}>{title}</Text>
-          <Text style={styles.brandSubtitle}>{subtitle}</Text>
+        <View style={styles.brandBlock}>
+          <Text style={styles.brandTitle} numberOfLines={1}>{title}</Text>
+          <Text style={styles.brandSubtitle} numberOfLines={1}>{subtitle}</Text>
         </View>
 
         <TouchableOpacity style={styles.locationBadge} onPress={onLocationPress} activeOpacity={0.7}>
           <Text style={styles.locationPin}>📍</Text>
-          <Text style={styles.locationText}>{location}</Text>
+          <Text style={styles.locationText} numberOfLines={1}>{location}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Search Input Bar */}
       {showSearch && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.searchContainer}
           activeOpacity={0.9}
           onPress={onSearchPress}
         >
           <Text style={styles.searchIcon}>🔍</Text>
-          <Text style={styles.placeholderText}>{searchPlaceholder}</Text>
-          <TouchableOpacity 
-            style={styles.filterBtn} 
-            onPress={(e) => {
-              e.stopPropagation();
-              if (onFilterPress) onFilterPress();
-            }} 
+          <Text style={styles.placeholderText} numberOfLines={1}>{searchPlaceholder}</Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Open filters"
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.filterBtn}
+            onPress={onFilterPress}
             activeOpacity={0.7}
           >
             <Text style={styles.filterBtnText}>⚙️</Text>
@@ -60,79 +61,86 @@ export const HeaderComponent: React.FC<HeaderComponentProps> = ({
       )}
     </View>
   );
-};
+});
+
+HeaderComponent.displayName = 'HeaderComponent';
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0F172A',
-    paddingTop: 10,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: COLORS.chromeBg,
+    paddingTop: vs(10),
+    paddingBottom: vs(12),
+    paddingHorizontal: universalPaddingHorizontal,
+    borderBottomLeftRadius: RADIUS.xl,
+    borderBottomRightRadius: RADIUS.xl,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: vs(10),
+  },
+  brandBlock: {
+    flexShrink: 1,
+    paddingRight: hs(8),
   },
   brandTitle: {
-    fontSize: 22,
+    fontSize: msc(22),
     fontWeight: '900',
-    color: '#FF6B00',
+    color: COLORS.primary,
     letterSpacing: 0.5,
   },
   brandSubtitle: {
-    fontSize: 10,
-    color: '#94A3B8',
+    fontSize: msc(10),
+    color: COLORS.faint,
     fontWeight: '500',
   },
   locationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    backgroundColor: COLORS.chromeSurface,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(5),
+    borderRadius: RADIUS.pill,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: COLORS.inkSoft,
+    maxWidth: '55%',
   },
   locationPin: {
-    fontSize: 11,
-    marginRight: 4,
+    fontSize: msc(11),
+    marginRight: hs(4),
   },
   locationText: {
-    fontSize: 11,
-    color: '#F8FAFC',
+    fontSize: msc(11),
+    color: COLORS.onDark,
     fontWeight: '600',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: COLORS.chromeSurface,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: hs(12),
+    paddingVertical: vs(8),
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: COLORS.inkSoft,
   },
   searchIcon: {
-    fontSize: 13,
-    marginRight: 8,
+    fontSize: msc(13),
+    marginRight: hs(8),
   },
   placeholderText: {
     flex: 1,
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: msc(12),
+    color: COLORS.faint,
   },
   filterBtn: {
-    backgroundColor: '#334155',
-    borderRadius: 6,
-    padding: 5,
-    paddingHorizontal: 7,
+    backgroundColor: COLORS.inkSoft,
+    borderRadius: RADIUS.sm,
+    padding: hs(5),
+    paddingHorizontal: hs(7),
   },
   filterBtnText: {
-    fontSize: 11,
+    fontSize: msc(11),
   },
 });

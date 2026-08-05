@@ -1,0 +1,144 @@
+{
+  "version": "1.2",
+  "pageId": "CARS24_CAR_DETAILS",
+  "title": "Car Details",
+  "initialState": {
+    "carTenure": "36"
+  },
+  "page": [
+    {
+      "id": "hero_image",
+      "type": "IMAGE",
+      "props": { "uri": "{{state.car.imageUrl}}", "height": 220, "radius": 0 }
+    },
+    {
+      "id": "details_card",
+      "type": "COLUMN",
+      "props": { "padding": 20, "background": "surface" },
+      "style": { "borderTopLeftRadius": 24, "borderTopRightRadius": 24, "marginTop": -16 },
+      "children": [
+        { "type": "BADGE", "props": { "label": "CARS24 CERTIFIED", "tone": "success", "icon": "✓" } },
+        {
+          "type": "TEXT",
+          "props": { "text": "{{state.car.year}} {{state.car.title}}", "variant": "title" },
+          "style": { "marginTop": 10 }
+        },
+        {
+          "type": "TEXT",
+          "props": { "text": "{{state.car.price}}", "variant": "display", "color": "primary" },
+          "style": { "marginBottom": 6 }
+        },
+        { "type": "RATING", "props": { "value": 4, "label": "4.2 · 128 owner reviews" } },
+        { "type": "SPACER", "props": { "height": 14 } },
+        {
+          "type": "ROW",
+          "props": { "gap": 8 },
+          "children": [
+            { "type": "STAT_TILE", "props": { "label": "Mileage", "value": "{{state.car.mileage}}" } },
+            { "type": "STAT_TILE", "props": { "label": "Fuel", "value": "{{state.car.fuel}}" } },
+            { "type": "STAT_TILE", "props": { "label": "Owner", "value": "{{state.car.owner}}" } }
+          ]
+        },
+        { "type": "SPACER", "props": { "height": 16 } },
+        {
+          "id": "emi_block",
+          "type": "CARD",
+          "children": [
+            { "type": "TEXT", "props": { "text": "Choose your EMI plan", "variant": "sectionTitle" } },
+            { "type": "SPACER", "props": { "height": 10 } },
+            {
+              "id": "detail_tenure_selector",
+              "type": "SEGMENTED_CONTROL",
+              "props": {
+                "selected": "{{state.carTenure}}",
+                "segments": [
+                  { "id": "24", "label": "24 mo", "emi": "{{state.car.emi24}}" },
+                  { "id": "36", "label": "36 mo", "emi": "{{state.car.emi36}}" },
+                  { "id": "48", "label": "48 mo", "emi": "{{state.car.emi48}}" },
+                  { "id": "60", "label": "60 mo", "emi": "{{state.car.emi60}}" }
+                ]
+              },
+              "actions": {
+                "onSelect": {
+                  "type": "SET_STATE",
+                  "payload": {
+                    "values": {
+                      "carTenure": "{{event.id}}",
+                      "carEmi": "{{event.emi}}"
+                    }
+                  }
+                }
+              }
+            },
+            { "type": "SPACER", "props": { "height": 12 } },
+            { "type": "KEY_VALUE_ROW", "props": { "label": "Tenure", "value": "{{state.carTenure}} months" } },
+            { "type": "DIVIDER" },
+            {
+              "type": "KEY_VALUE_ROW",
+              "props": { "label": "Monthly EMI", "value": "₹{{state.carEmi}}", "emphasis": true }
+            },
+            { "type": "SPACER", "props": { "height": 10 } },
+            {
+              "type": "BUTTON",
+              "props": { "label": "Full EMI breakdown", "variant": "secondary", "size": "sm" },
+              "action": {
+                "type": "OPEN_BOTTOM_SHEET",
+                "payload": {
+                  "title": "EMI Breakdown — {{state.car.title}}",
+                  "body": [
+                    {
+                      "type": "COLUMN",
+                      "props": { "gap": 2 },
+                      "children": [
+                        { "type": "KEY_VALUE_ROW", "props": { "label": "Car price", "value": "{{state.car.price}}" } },
+                        { "type": "KEY_VALUE_ROW", "props": { "label": "Down payment", "value": "10% of price" } },
+                        { "type": "KEY_VALUE_ROW", "props": { "label": "Interest rate", "value": "11.5% p.a." } },
+                        { "type": "KEY_VALUE_ROW", "props": { "label": "Tenure", "value": "{{state.carTenure}} months" } },
+                        { "type": "DIVIDER" },
+                        {
+                          "type": "KEY_VALUE_ROW",
+                          "props": { "label": "Monthly EMI", "value": "₹{{state.carEmi}}", "emphasis": true }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        { "type": "SPACER", "props": { "height": 16 } },
+        {
+          "id": "inspection_card",
+          "type": "CARD",
+          "children": [
+            { "type": "TEXT", "props": { "text": "Inspection highlights", "variant": "sectionTitle" } },
+            { "type": "SPACER", "props": { "height": 8 } },
+            { "type": "PROGRESS_BAR", "props": { "label": "Overall condition score", "value": 92, "max": 100 } },
+            { "type": "SPACER", "props": { "height": 10 } },
+            { "type": "CHECK_ROW", "props": { "label": "140-point quality check passed" } },
+            { "type": "CHECK_ROW", "props": { "label": "No structural damage" } },
+            { "type": "CHECK_ROW", "props": { "label": "12 months warranty included" } },
+            { "type": "CHECK_ROW", "props": { "label": "7-day easy return guarantee" } },
+            { "type": "CHECK_ROW", "props": { "label": "Minor scratch on rear bumper", "checked": false, "detail": "photo 4" } }
+          ]
+        },
+        { "type": "SPACER", "props": { "height": 16 } },
+        {
+          "type": "BUTTON",
+          "props": { "label": "Book Free Test Drive", "variant": "primary", "size": "lg", "fullWidth": true },
+          "action": {
+            "type": "API_CALL",
+            "payload": {
+              "url": "https://api.cars24.com/v1/test-drive/book",
+              "method": "POST",
+              "title": "Test drive requested 🎉",
+              "content": "Our team will call you within 30 minutes to schedule your free doorstep test drive."
+            }
+          }
+        },
+        { "type": "SPACER", "props": { "height": 30 } }
+      ]
+    }
+  ]
+}

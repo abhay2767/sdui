@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { COLORS, RADIUS, hs, vs, msc, universalPaddingHorizontal } from './tokens';
 
 interface BannerComponentProps {
   title?: string;
@@ -12,7 +13,7 @@ interface BannerComponentProps {
   onPress?: () => void;
 }
 
-export const BannerComponent: React.FC<BannerComponentProps> = ({
+export const BannerComponent: React.FC<BannerComponentProps> = React.memo(({
   title = '7-Day Return Guarantee',
   subtitle = '100% Refund if you change your mind',
   ctaText = 'Explore Warranty',
@@ -34,10 +35,10 @@ export const BannerComponent: React.FC<BannerComponentProps> = ({
             <Text style={styles.badgeText}>{badge}</Text>
           </View>
         ) : null}
-        
+
         <Text style={[styles.title, { color: textColor }]}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
-        
+
         {ctaText ? (
           <View style={styles.ctaButton}>
             <Text style={styles.ctaText}>{ctaText} →</Text>
@@ -47,7 +48,7 @@ export const BannerComponent: React.FC<BannerComponentProps> = ({
 
       {imageUrl ? (
         <Image
-          source={{ uri: imageUrl }}
+          source={{ uri: imageUrl, cache: 'force-cache' }}
           style={styles.bannerImage}
           resizeMode="cover"
         />
@@ -58,14 +59,16 @@ export const BannerComponent: React.FC<BannerComponentProps> = ({
       )}
     </TouchableOpacity>
   );
-};
+});
+
+BannerComponent.displayName = 'BannerComponent';
 
 const styles = StyleSheet.create({
   banner: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 16,
-    padding: 16,
+    marginHorizontal: universalPaddingHorizontal,
+    marginVertical: vs(8),
+    borderRadius: RADIUS.lg,
+    padding: hs(16),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -78,55 +81,55 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: hs(12),
   },
   badgeContainer: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FF6B00',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginBottom: 6,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(3),
+    borderRadius: RADIUS.sm,
+    marginBottom: vs(6),
   },
   badgeText: {
-    fontSize: 9,
+    fontSize: msc(9),
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: COLORS.buttonText,
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 16,
+    fontSize: msc(16),
     fontWeight: '800',
-    marginBottom: 4,
+    marginBottom: vs(4),
   },
   subtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginBottom: 10,
-    lineHeight: 16,
+    fontSize: msc(12),
+    color: COLORS.faint,
+    marginBottom: vs(10),
+    lineHeight: msc(16),
   },
   ctaButton: {
     alignSelf: 'flex-start',
   },
   ctaText: {
-    fontSize: 12,
+    fontSize: msc(12),
     fontWeight: '700',
-    color: '#38BDF8',
+    color: COLORS.info,
   },
   bannerImage: {
-    width: 85,
-    height: 85,
-    borderRadius: 12,
+    width: hs(85),
+    height: hs(85),
+    borderRadius: RADIUS.md,
   },
   illustrationBox: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: hs(70),
+    height: hs(70),
+    borderRadius: hs(35),
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   illustrationEmoji: {
-    fontSize: 32,
+    fontSize: msc(32),
   },
 });

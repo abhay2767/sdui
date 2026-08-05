@@ -1,123 +1,148 @@
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HeaderComponent } from '../sdui/components/HeaderComponent';
 import { ChipGroupComponent } from '../sdui/components/ChipGroupComponent';
 import { BannerComponent } from '../sdui/components/BannerComponent';
 import { CarouselComponent } from '../sdui/components/CarouselComponent';
 import { CarCardComponent } from '../sdui/components/CarCardComponent';
 import { GridComponent } from '../sdui/components/GridComponent';
-import { SpacerComponent } from '../sdui/components/SpacerComponent';
-import { BottomSheetComponent } from '../sdui/components/BottomSheetComponent';
-import { useSDUI } from '../sdui/context/SDUIContext';
+import { CardNode, RowNode, DividerNode, SpacerNode } from '../sdui/components/primitives/Layout';
+import { TextNode } from '../sdui/components/primitives/Text';
+import { StatTileNode, KeyValueRowNode } from '../sdui/components/primitives/DataDisplay';
+import { SegmentedControlNode } from '../sdui/components/primitives/Interactive';
 import {
   STATIC_HEADER_DATA,
   STATIC_CHIPS_DATA,
   STATIC_BANNER_DATA,
+  STATIC_TENURES,
   STATIC_FEATURED_CARS,
   STATIC_POPULAR_CARS,
+  STATIC_VALUE_PROPS,
+  StaticCar,
 } from '../data/staticHomeData';
-import { perfTracker, getCurrentTimeMs } from '../sdui/utils/perf';
+import { useScreenTimings } from '../sdui/utils/useScreenTimings';
+import { PerfBar } from '../components/PerfBar';
+import type { RootStackParamList } from '../navigation/navigationRef';
+import { COLORS, hs, vs } from '../theme';
 
-interface HomeScreenStaticProps {
-  navigation: any;
-}
+const PERF_NAME = 'STATIC_HOME';
 
-export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'HomeStatic'>;
+
+/**
+ * The hardcoded baseline for PERF.md.
+ *
+ * Uses the SAME leaf components and the SAME measurement harness as the SDUI
+ * screen — no JSON, no registry, no renderer, no bindings. The delta between
+ * the two screens is therefore the engine's cost and nothing else.
+ */
+export const HomeScreenStatic: React.FC<Props> = ({ navigation }) => {
+  const { onRootLayout, onLastSectionLayout } = useScreenTimings(PERF_NAME);
   const [selectedChip, setSelectedChip] = useState('all');
-  const [renderTimeMs, setRenderTimeMs] = useState(0);
-  const { openBottomSheet } = useSDUI();
+  const [tenure, setTenure] = useState('36');
+  const [emi, setEmi] = useState('18,450');
+  const [wishlist, setWishlist] = useState<string[]>([]);
 
-  useEffect(() => {
-    const start = getCurrentTimeMs();
-    // Simulate static mount render time
-    const end = getCurrentTimeMs();
-    const duration = end - start;
-
-    setRenderTimeMs(duration);
-    perfTracker.recordMetric({
-      name: 'STATIC_HOME_SCREEN',
-      parseTimeMs: 0.0,
-      renderTimeMs: duration,
-      totalTimeMs: duration,
-      nodeCount: 12,
-      timestamp: new Date().toISOString(),
-    });
-  }, []);
+  const matches = (car: StaticCar) => selectedChip === 'all' || car.category === selectedChip;
+  const toggleWishlist = (id: string) =>
+    setWishlist(previous =>
+      previous.includes(id) ? previous.filter(entry => entry !== id) : [...previous, id],
+    );
+  const openDetails = (car: StaticCar) =>
+    navigation.navigate('CarDetails', { car: { ...car, fuel: car.fuelType, owner: '1st Owner' } });
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Performance Bar */}
-      <View style={styles.perfBar}>
-        <View style={styles.perfItem}>
-          <Text style={styles.perfLabel}>Static Mode</Text>
-          <Text style={styles.perfValue}>Hardcoded UI</Text>
-        </View>
-        <View style={styles.perfDivider} />
-        <View style={styles.perfItem}>
-          <Text style={styles.perfLabel}>Total TTR</Text>
-          <Text style={styles.perfValueHighlight}>{renderTimeMs.toFixed(2)}ms</Text>
-        </View>
-        <View style={styles.perfDivider} />
-        <TouchableOpacity
-          style={styles.benchmarkBtn}
-          onPress={() => navigation.navigate('PerfBenchmark')}
-        >
-          <Text style={styles.benchmarkBtnText}>📊 Compare</Text>
-        </TouchableOpacity>
-      </View>
+      <PerfBar perfName={PERF_NAME} mode="static" />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
-        {/* Section 1: Header */}
-        <HeaderComponent
-          {...STATIC_HEADER_DATA}
-          onLocationPress={() =>
-            openBottomSheet('📍 Select City / Location', 'Choose your location: Gurgaon, Delhi NCR, Mumbai, Bengaluru, Hyderabad')
-          }
-          onSearchPress={() =>
-            openBottomSheet('🔍 Search Used Cars', 'Search by brand or model (e.g. Swift, Creta, City, Nexon).')
-          }
-          onFilterPress={() =>
-            openBottomSheet('⚙️ Car Filter Settings', 'Filter options: Price, Fuel Type, Transmission, Year.')
-          }
-        />
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContainer}
+      >
+        {/* Same content-anchored TTR measurement as the SDUI screen */}
+        <View onLayout={onRootLayout}>
+          <HeaderComponent {...STATIC_HEADER_DATA} />
 
-        {/* Section 2: Chip Group */}
-        <ChipGroupComponent
-          items={STATIC_CHIPS_DATA}
-          selectedId={selectedChip}
-          onSelect={chip => setSelectedChip(chip.id)}
-        />
+          <ChipGroupComponent
+            items={STATIC_CHIPS_DATA}
+            selected={selectedChip}
+            onSelect={chip => setSelectedChip(chip.id)}
+          />
 
-        {/* Section 3: Banner */}
-        <BannerComponent {...STATIC_BANNER_DATA} />
+          <BannerComponent {...STATIC_BANNER_DATA} />
 
-        {/* Section 4: Carousel */}
-        <CarouselComponent title="⚡ Hot Picked Cars Today" subtitle="Handpicked top quality cars near Gurgaon">
-          {STATIC_FEATURED_CARS.map(car => (
-            <CarCardComponent
-              key={car.id}
-              {...car}
-              onPress={() => navigation.navigate('CarDetails', { carId: car.id, title: car.title, price: car.price })}
+          <CarouselComponent
+            title="⚡ Hot Picks Today"
+            subtitle="Handpicked quality cars in Gurgaon, NCR"
+            itemWidth={270}
+          >
+            {STATIC_FEATURED_CARS.filter(matches).map(car => (
+              <CarCardComponent
+                key={car.id}
+                {...car}
+                isWishlisted={wishlist.includes(car.id)}
+                onWishlistPress={() => toggleWishlist(car.id)}
+                onPress={() => openDetails(car)}
+              />
+            ))}
+          </CarouselComponent>
+
+          <CardNode style={styles.emiCard}>
+            <TextNode text="💰 EMI Calculator" variant="sectionTitle" />
+            <SpacerNode height={10} />
+            <SegmentedControlNode
+              segments={STATIC_TENURES}
+              selected={tenure}
+              onSelect={segment => {
+                setTenure(segment.id);
+                setEmi((segment as { emi?: string }).emi ?? '');
+              }}
             />
-          ))}
-        </CarouselComponent>
+            <SpacerNode height={12} />
+            <KeyValueRowNode label="Tenure" value={`${tenure} months`} />
+            <DividerNode />
+            <KeyValueRowNode label="Monthly EMI" value={`₹${emi}`} emphasis />
+          </CardNode>
 
-        {/* Section 5: Grid */}
-        <GridComponent title="🔥 Popular Cars Near You" subtitle="Verified used cars with free home delivery">
-          {STATIC_POPULAR_CARS.map(car => (
-            <CarCardComponent
-              key={car.id}
-              {...car}
-              onPress={() => navigation.navigate('CarDetails', { carId: car.id, title: car.title, price: car.price })}
-            />
-          ))}
-        </GridComponent>
+          <GridComponent
+            title="🔥 Popular Near You"
+            subtitle="Verified cars with free home delivery"
+            columns={2}
+            gap={12}
+          >
+            {STATIC_POPULAR_CARS.filter(matches).map(car => (
+              <CarCardComponent
+                key={car.id}
+                {...car}
+                isWishlisted={wishlist.includes(car.id)}
+                onWishlistPress={() => toggleWishlist(car.id)}
+                onPress={() => openDetails(car)}
+              />
+            ))}
+          </GridComponent>
 
-        <SpacerComponent height={40} />
+          <RowNode gap={10} paddingHorizontal={16} style={styles.valueProps}>
+            {STATIC_VALUE_PROPS.map(item => (
+              <StatTileNode key={item.label} {...item} />
+            ))}
+          </RowNode>
+
+          <BannerComponent
+            title="Sell Your Car in 1 Hour"
+            subtitle="Instant quote & payment at your doorstep"
+            ctaText="Get Free Valuation"
+            badge="INSTANT CASH"
+            backgroundColor={COLORS.primary}
+            textColor={COLORS.buttonText}
+          />
+
+          <SpacerNode height={40} />
+          <View onLayout={onLastSectionLayout} />
+        </View>
       </ScrollView>
-
-      <BottomSheetComponent />
     </SafeAreaView>
   );
 };
@@ -125,57 +150,20 @@ export const HomeScreenStatic: React.FC<HomeScreenStaticProps> = ({ navigation }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.chromeBg,
   },
-  perfBar: {
-    backgroundColor: '#0F172A',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  perfItem: {
-    flexDirection: 'column',
-  },
-  perfLabel: {
-    color: '#94A3B8',
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  perfValue: {
-    color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '700',
-    fontFamily: 'monospace',
-  },
-  perfValueHighlight: {
-    color: '#10B981',
-    fontSize: 11,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-  },
-  perfDivider: {
-    width: 1,
-    height: 16,
-    backgroundColor: '#334155',
-  },
-  benchmarkBtn: {
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  benchmarkBtnText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
+  scroll: {
+    flex: 1,
+    backgroundColor: COLORS.canvas,
   },
   scrollContainer: {
-    backgroundColor: '#F8FAFC',
-    paddingBottom: 24,
+    paddingBottom: vs(24),
+  },
+  emiCard: {
+    marginHorizontal: hs(16),
+    marginVertical: vs(8),
+  },
+  valueProps: {
+    marginVertical: vs(8),
   },
 });

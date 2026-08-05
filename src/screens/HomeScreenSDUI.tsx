@@ -1,114 +1,62 @@
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SDUIRenderer } from '../sdui/renderer/Renderer';
-import { SDUIPageSchema } from '../sdui/types/schema';
-import { perfTracker, getCurrentTimeMs } from '../sdui/utils/perf';
-import { logger } from '../sdui/utils/logger';
-import { isSchemaSupported } from '../sdui/utils/versioning';
-import homeJsonRaw from '../data/homeSDUI.json';
-import { BottomSheetComponent } from '../sdui/components/BottomSheetComponent';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SDUIRenderer, SDUIPageProvider } from '../sdui/renderer/Renderer';
+import { useSDUIPage } from '../sdui/hooks/useSDUIPage';
+import { useScreenTimings } from '../sdui/utils/useScreenTimings';
+import { SkeletonHomePage } from '../sdui/components/skeletons/PageSkeletons';
+import { PerfBar } from '../components/PerfBar';
+import type { RootStackParamList } from '../navigation/navigationRef';
+import { COLORS, hs, vs, msc } from '../theme';
 
-interface HomeScreenSDUIProps {
-  navigation: any;
-}
+const PERF_NAME = 'SDUI_HOME';
 
-export const HomeScreenSDUI: React.FC<HomeScreenSDUIProps> = ({ navigation }) => {
-  const [schema, setSchema] = useState<SDUIPageSchema | null>(null);
-  const [metrics, setMetrics] = useState({
-    parseTimeMs: 0,
-    renderTimeMs: 0,
-    totalTimeMs: 0,
-    nodeCount: 0,
-  });
+type Props = NativeStackScreenProps<RootStackParamList, 'HomeSDUI'>;
 
-  useEffect(() => {
-    // Measure JSON Parse Time
-    const parseStart = getCurrentTimeMs();
-    const parsedData: SDUIPageSchema = JSON.parse(JSON.stringify(homeJsonRaw));
-    const parseEnd = getCurrentTimeMs();
-    const parseTimeMs = parseEnd - parseStart;
-
-    // Check version compatibility
-    isSchemaSupported(parsedData.version);
-
-    // Count nodes
-    const countNodes = (nodes: any[]): number => {
-      let count = nodes.length;
-      for (const n of nodes) {
-        if (n.children && Array.isArray(n.children)) {
-          count += countNodes(n.children);
-        }
-      }
-      return count;
-    };
-    const totalNodes = parsedData.page ? countNodes(parsedData.page) : 0;
-
-    // Measure Render Setup Time
-    const renderStart = getCurrentTimeMs();
-    setSchema(parsedData);
-    const renderEnd = getCurrentTimeMs();
-    const renderTimeMs = renderEnd - renderStart;
-
-    const totalTimeMs = parseTimeMs + renderTimeMs;
-
-    const perfRecord = {
-      name: 'SDUI_HOME_SCREEN',
-      parseTimeMs,
-      renderTimeMs,
-      totalTimeMs,
-      nodeCount: totalNodes,
-      timestamp: new Date().toISOString(),
-    };
-
-    perfTracker.recordMetric(perfRecord);
-    setMetrics({
-      parseTimeMs,
-      renderTimeMs,
-      totalTimeMs,
-      nodeCount: totalNodes,
-    });
-    logger.info('SDUI_RENDER', `SDUI Home Page Rendered ${totalNodes} nodes in ${totalTimeMs.toFixed(2)}ms`);
-  }, []);
+/**
+ * The SDUI-driven home screen. Screen code is deliberately thin: fetch the
+ * payload, hand it to the renderer, host the shared chrome (perf bar,
+ * skeleton). Everything the user sees below the perf bar comes from
+ * homeSDUI.json.
+ */
+export const HomeScreenSDUI: React.FC<Props> = () => {
+  // onRootLayout is attached to the *content* container (mounted only once
+  // the payload arrived), so TTR measures real sections — never the skeleton.
+  const { onRootLayout, onLastSectionLayout } = useScreenTimings(PERF_NAME);
+  const { schema, unsupportedReason, error } = useSDUIPage('home', PERF_NAME);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Floating Performance Metric Overlay Bar */}
-      <View style={styles.perfBar}>
-        <View style={styles.perfItem}>
-          <Text style={styles.perfLabel}>SDUI Mode</Text>
-          <Text style={styles.perfValue}>Parse: {metrics.parseTimeMs.toFixed(2)}ms</Text>
-        </View>
-        <View style={styles.perfDivider} />
-        <View style={styles.perfItem}>
-          <Text style={styles.perfLabel}>Total TTR</Text>
-          <Text style={styles.perfValueHighlight}>{metrics.totalTimeMs.toFixed(2)}ms</Text>
-        </View>
-        <View style={styles.perfDivider} />
-        <TouchableOpacity
-          style={styles.benchmarkBtn}
-          onPress={() => navigation.navigate('PerfBenchmark')}
-        >
-          <Text style={styles.benchmarkBtnText}>📊 Compare</Text>
-        </TouchableOpacity>
-      </View>
+      <PerfBar perfName={PERF_NAME} mode="sdui" />
 
-      {/* Main Scrollable SDUI Content */}
       <ScrollView
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {schema && schema.page ? (
-          <SDUIRenderer nodes={schema.page} navigation={navigation} />
-        ) : (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading SDUI Engine...</Text>
+        {schema?.page ? (
+          <View onLayout={onRootLayout}>
+            <SDUIPageProvider theme={schema.theme}>
+              <SDUIRenderer nodes={schema.page} />
+              {/* Fires when the last SDUI section has been laid out */}
+              <View onLayout={onLastSectionLayout} />
+            </SDUIPageProvider>
           </View>
+        ) : unsupportedReason ? (
+          <View style={styles.messageBox}>
+            <Text style={styles.messageTitle}>Please update your app</Text>
+            <Text style={styles.messageText}>{unsupportedReason}</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.messageBox}>
+            <Text style={styles.messageTitle}>Couldn't load this page</Text>
+            <Text style={styles.messageText}>{error}</Text>
+          </View>
+        ) : (
+          <SkeletonHomePage />
         )}
       </ScrollView>
-
-      {/* Interactive Bottom Sheet Modal */}
-      <BottomSheetComponent />
     </SafeAreaView>
   );
 };
@@ -116,65 +64,28 @@ export const HomeScreenSDUI: React.FC<HomeScreenSDUIProps> = ({ navigation }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.chromeBg,
   },
-  perfBar: {
-    backgroundColor: '#0F172A',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  perfItem: {
-    flexDirection: 'column',
-  },
-  perfLabel: {
-    color: '#94A3B8',
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  perfValue: {
-    color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '700',
-    fontFamily: 'monospace',
-  },
-  perfValueHighlight: {
-    color: '#10B981',
-    fontSize: 11,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-  },
-  perfDivider: {
-    width: 1,
-    height: 16,
-    backgroundColor: '#334155',
-  },
-  benchmarkBtn: {
-    backgroundColor: '#FF6B00',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  benchmarkBtnText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
+  scroll: {
+    flex: 1,
+    backgroundColor: COLORS.canvas,
   },
   scrollContainer: {
-    backgroundColor: '#F8FAFC',
-    paddingBottom: 24,
+    paddingBottom: vs(24),
   },
-  loadingContainer: {
-    padding: 32,
+  messageBox: {
+    padding: hs(32),
     alignItems: 'center',
   },
-  loadingText: {
-    color: '#64748B',
-    fontSize: 14,
+  messageTitle: {
+    fontSize: msc(16),
+    fontWeight: '800',
+    color: COLORS.ink,
+    marginBottom: vs(6),
+  },
+  messageText: {
+    color: COLORS.muted,
+    fontSize: msc(13),
+    textAlign: 'center',
   },
 });

@@ -1,137 +1,203 @@
-import React, { useMemo } from 'react';
-import { SDUINode } from '../types/schema';
-import { getComponentForType } from '../registry';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
+import type {
+  ActionDefinition,
+  BindingScope,
+  SDUINode,
+} from '../types/schema';
+import { lookupComponent } from '../registry';
 import { useSDUI } from '../context/SDUIContext';
+import { evaluateCondition } from '../engine/conditions';
+import { resolveValue, resolveStyleTokens } from '../engine/bindings';
+import { isNodeSupported } from '../engine/versioning';
+import { NodeErrorBoundary } from '../components/system/NodeErrorBoundary';
+import { UnsupportedNode } from '../components/system/UnsupportedNode';
 
-interface RendererProps {
-  node?: SDUINode;
-  nodes?: SDUINode[];
-  navigation?: any;
+/**
+ * Per-page context. Carries page-scoped, render-static data (currently the
+ * style theme). Navigation deliberately does NOT live here — NAVIGATE goes
+ * through the module-level navigationRef in the dispatcher, so actions work
+ * identically in screens, bottom-sheet bodies, and any future portal.
+ */
+interface PageContextValue {
+  theme?: Record<string, Record<string, unknown>>;
 }
 
-export const SDUIRenderer: React.FC<RendererProps> = React.memo(({ node, nodes, navigation }) => {
-  const { state, handleAction } = useSDUI();
+const PageContext = createContext<PageContextValue>({});
 
-  const renderSingleNode = (item: SDUINode, index: number | string): React.ReactNode => {
-    if (!item || typeof item !== 'object') return null;
+export const SDUIPageProvider: React.FC<PageContextValue & { children: React.ReactNode }> = ({
+  theme,
+  children,
+}) => {
+  const value = useMemo(() => ({ theme }), [theme]);
+  return <PageContext.Provider value={value}>{children}</PageContext.Provider>;
+};
 
-    // 1. Evaluate Condition (if specified)
-    if (item.condition) {
-      const { stateKey, equals, notEquals } = item.condition;
-      const currentValue = state[stateKey];
-      if (equals !== undefined && currentValue !== equals) return null;
-      if (notEquals !== undefined && currentValue === notEquals) return null;
+// ---------------------------------------------------------------------------
+// Node rendering
+// ---------------------------------------------------------------------------
+
+interface NodeProps {
+  node: SDUINode;
+  /** Stable path-based key material, used for keys and telemetry. */
+  path: string;
+  /** Set when rendering inside a `forEach`, exposing `{{item.*}}`. */
+  item?: Record<string, unknown>;
+}
+
+/**
+ * Renders exactly one node.
+ *
+ * This function contains no knowledge of any component name. Everything a
+ * component needs — props, styles, callbacks — is derived from the node's own
+ * declarations. Adding a section type to the product means adding a file and a
+ * registry line; it never means editing this file.
+ */
+const SDUINodeView: React.FC<NodeProps> = React.memo(({ node, path, item }) => {
+  const { state, dispatch } = useSDUI();
+  const { theme } = useContext(PageContext);
+
+  const scope: BindingScope = useMemo(() => ({ state, item }), [state, item]);
+
+  // Latest-ref pattern for action callbacks: the *identity* of each slot
+  // callback is stable across renders (so memoized components skip), while
+  // the *behavior* always reads the freshest slots/scope at call time.
+  const latest = useRef<{
+    slots: Record<string, ActionDefinition | ActionDefinition[]>;
+    scope: BindingScope;
+    dispatch: typeof dispatch;
+  }>({ slots: {}, scope, dispatch });
+  const stableCallbacks = useRef<Record<string, (event?: unknown) => void>>({});
+
+  const degraded = (reason: 'unknown-type' | 'version-gated') => {
+    if (node.fallback) {
+      return <SDUINodeView node={node.fallback} path={`${path}.fallback`} item={item} />;
     }
-
-    // 2. Resolve Component from Registry
-    const Component = getComponentForType(item.type);
-
-    // 3. Resolve Props (Inject State & Action handlers)
-    const resolvedProps: Record<string, any> = { ...item.props };
-
-    // Inject state bindings into props if specified
-    if (resolvedProps.stateKey) {
-      resolvedProps.selectedId = state[resolvedProps.stateKey] ?? resolvedProps.selectedId;
-    }
-
-    // Bind item actions to onPress or onSelect callback
-    if (item.action) {
-      resolvedProps.onPress = () => handleAction(item.action!, navigation);
-    }
-
-    const typeUpper = item.type.toUpperCase();
-
-    if (typeUpper === 'HEADER') {
-      resolvedProps.onLocationPress = () => {
-        if (resolvedProps.locationAction) {
-          handleAction(resolvedProps.locationAction, navigation);
-        } else if (item.action) {
-          handleAction(item.action, navigation);
-        } else {
-          handleAction({
-            type: 'OPEN_BOTTOM_SHEET',
-            payload: {
-              title: '📍 Select City / Location',
-              content: 'Choose your preferred location: Gurgaon, Delhi NCR, Mumbai, Bengaluru, Hyderabad, Pune, Chennai',
-            },
-          }, navigation);
-        }
-      };
-
-      resolvedProps.onSearchPress = () => {
-        if (resolvedProps.searchAction) {
-          handleAction(resolvedProps.searchAction, navigation);
-        } else {
-          handleAction({
-            type: 'OPEN_BOTTOM_SHEET',
-            payload: {
-              title: '🔍 Search Used Cars',
-              content: 'Type brand or model (e.g. Swift, Creta, City, Nexon) to filter available inventory in real time.',
-            },
-          }, navigation);
-        }
-      };
-
-      resolvedProps.onFilterPress = () => {
-        if (resolvedProps.filterAction) {
-          handleAction(resolvedProps.filterAction, navigation);
-        } else {
-          handleAction({
-            type: 'OPEN_BOTTOM_SHEET',
-            payload: {
-              title: '⚙️ Car Filter Settings',
-              content: 'Filter options: Price Range, Fuel Type (Petrol/Diesel/EV), Transmission (Manual/Auto), Year of Manufacture',
-            },
-          }, navigation);
-        }
-      };
-    }
-
-    if (typeUpper === 'CHIP_GROUP') {
-      resolvedProps.onSelect = (chip: any) => {
-        if (resolvedProps.stateKey) {
-          handleAction(
-            {
-              type: 'UPDATE_STATE',
-              payload: { key: resolvedProps.stateKey, value: chip.id },
-            },
-            navigation
-          );
-        }
-        if (chip.action) {
-          handleAction(chip.action, navigation);
-        }
-      };
-    }
-
-    // 4. Recursive Child Rendering
-    let children: React.ReactNode = null;
-    if (item.children && Array.isArray(item.children) && item.children.length > 0) {
-      children = item.children.map((childNode, childIdx) =>
-        renderSingleNode(childNode, `${index}_child_${childIdx}`)
-      );
-    }
-
-    const key = item.id || `node_${item.type}_${index}`;
-
     return (
-      <Component
-        key={key}
-        {...resolvedProps}
-        style={item.style ? { ...item.style } : undefined}
-      >
-        {children}
-      </Component>
+      <UnsupportedNode
+        nodeType={node.type}
+        nodeId={node.id}
+        reason={reason}
+        message={
+          typeof node.props?.fallbackMessage === 'string'
+            ? node.props.fallbackMessage
+            : undefined
+        }
+      />
     );
   };
 
-  if (nodes && Array.isArray(nodes)) {
-    return <>{nodes.map((n, idx) => renderSingleNode(n, idx))}</>;
+  // 1. Visibility — evaluated before anything is built, so a hidden section
+  //    costs nothing beyond the condition check.
+  if (!evaluateCondition(node.visibleWhen, state)) return null;
+
+  // 2. Version gate.
+  if (!isNodeSupported(node.minVersion)) return degraded('version-gated');
+
+  // 3. Registry lookup.
+  const Component = lookupComponent(node.type);
+  if (!Component) return degraded('unknown-type');
+
+  // 4. Props and styles, with bindings resolved against current state.
+  const resolvedProps = resolveValue(node.props ?? {}, scope) as Record<string, unknown>;
+  const resolvedStyle = resolveStyleTokens(
+    resolveValue(node.style, scope) as Record<string, unknown> | undefined,
+    theme,
+  );
+
+  // 5. Action slots → callback props. `action` is sugar for `actions.onPress`.
+  const slots: Record<string, ActionDefinition | ActionDefinition[]> = {
+    ...(node.action ? { onPress: node.action } : {}),
+    ...(node.actions ?? {}),
+  };
+  latest.current = { slots, scope, dispatch };
+
+  const callbacks: Record<string, (event?: unknown) => void> = {};
+  for (const slotName of Object.keys(slots)) {
+    if (!stableCallbacks.current[slotName]) {
+      stableCallbacks.current[slotName] = (event?: unknown) => {
+        const current = latest.current;
+        const definition = current.slots[slotName];
+        if (definition) {
+          current.dispatch(definition, { ...current.scope, event });
+        }
+      };
+    }
+    callbacks[slotName] = stableCallbacks.current[slotName];
   }
 
-  if (node) {
-    return <>{renderSingleNode(node, 0)}</>;
+  // 6. Children: either an explicit list, or a template repeated over data.
+  let children: React.ReactNode = null;
+
+  const repeatData =
+    node.forEach ??
+    (node.forEachStateKey
+      ? (state[node.forEachStateKey] as Record<string, unknown>[] | undefined)
+      : undefined);
+
+  if (node.template && Array.isArray(repeatData)) {
+    children = repeatData.map((entry, index) => (
+      <SDUINodeView
+        key={(entry?.id as string) ?? `${path}.each.${index}`}
+        node={node.template as SDUINode}
+        path={`${path}.each.${index}`}
+        item={entry}
+      />
+    ));
+  } else if (Array.isArray(node.children) && node.children.length > 0) {
+    children = node.children.map((child, index) => (
+      <SDUINodeView
+        key={child.id ?? `${path}.${child.type}.${index}`}
+        node={child}
+        path={`${path}.${child.type}.${index}`}
+        item={item}
+      />
+    ));
   }
 
+  return (
+    <NodeErrorBoundary
+      nodeType={node.type}
+      nodeId={node.id}
+      fallback={
+        <UnsupportedNode nodeType={node.type} nodeId={node.id} reason="render-error" />
+      }
+    >
+      <Component {...resolvedProps} {...callbacks} style={resolvedStyle}>
+        {children}
+      </Component>
+    </NodeErrorBoundary>
+  );
+});
+
+SDUINodeView.displayName = 'SDUINodeView';
+
+export { SDUINodeView };
+
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
+
+interface RendererProps {
+  nodes?: SDUINode[];
+  node?: SDUINode;
+}
+
+export const SDUIRenderer: React.FC<RendererProps> = React.memo(({ nodes, node }) => {
+  if (Array.isArray(nodes)) {
+    return (
+      <>
+        {nodes.map((child, index) => (
+          <SDUINodeView
+            key={child.id ?? `root.${child.type}.${index}`}
+            node={child}
+            path={`root.${index}`}
+          />
+        ))}
+      </>
+    );
+  }
+  if (node) return <SDUINodeView node={node} path="root.0" />;
   return null;
 });
+
+SDUIRenderer.displayName = 'SDUIRenderer';
